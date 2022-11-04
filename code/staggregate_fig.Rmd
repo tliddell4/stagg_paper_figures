@@ -23,6 +23,21 @@ library(data.table)
 library(shades)
 ```
 
+Read in Data
+```{r}
+# Raster brick 1 year of temp data !!!This file is to big for the repo, you must have it in your local data folder!!!
+data <- crop(brick(here("data", "era5_temp_2020.nc")), c((360 + (x_min - .5)), 360 + (x_max + .5), (y_min - .5), (y_max + .5)))
+
+# Converting to C
+data <- data -273.15
+
+
+# Select counties in CA
+ca_counties <- st_crop(counties("CA"), c(xmin = x_min, xmax = x_max, ymin = y_min, ymax = y_max)) %>%
+  filter(GEOID %in% c("06003", "06109", "06043", "06009")) %>% 
+  st_as_sf()
+```
+
 Define Variables
 ```{r, include = FALSE}
 # Cropping and Placement
@@ -34,23 +49,413 @@ x_max <- x_min + 2
 y_max <- y_min + 2
 y_int <- .1
 
-# Color Palette <--- Currently in K, based on F. Will make this in C based on C for nicer scales. 
-temp_colors <- c("#3D0216", "#560C25", "#6C1531", "#87203E", "#9F294C", "#AF4D4E", "#BE704C", "#C38A53", "#C19D61", "#C2AB75", "#ABA87D", "#879A84", "#648D89", "#438190", "#287593", "#27678A", "#275B80", "#254F77", "#26436F", "#2F4775", "#39517F", "#415C87", "#4D6591", "#56719C", "#607BA5", "#7591B9", "#7F9BC3", "#8AA4CD", "#93B1D7", "#9CB8DF", "#A7BFE3", "#AFC6E6", "#B8CDE8", "#C0D4ED", "#CBDBF4", "#D3E2F7", "#DCE9FA", "#E4F0FF") %>% 
-  rev()
-
-
-temp_breaks <- c(199.8166667, 222.0388889, 224.8166667, 227.5944444, 230.3722222, 233.15, 235.9277778, 238.7055556, 241.4833333, 244.2611111, 247.0388889, 249.8166667, 252.5944444, 255.3722222, 258.15, 260.9277778, 263.7055556, 266.4833333, 269.2611111, 272.0388889, 274.8166667, 277.5944444, 280.3722222, 283.15, 285.9277778, 288.7055556, 291.4833333, 294.2611111, 297.0388889, 299.8166667, 302.5944444, 305.3722222, 308.15, 310.9277778, 313.7055556, 316.4833333, 319.2611111, 322.0388889) %>% 
-  sort(decreasing = TRUE)
-
+fill_palette <- "Spectral"
 
 ```
 
 
-Read in Data
+Define Rotation Functions (This Code is Not My Own, I don't understand it very well)
 ```{r}
-data <- crop(brick(here("data", "era5_temp_2020.nc")), c((360 + (x_min - .5)), 360 + (x_max + .5), (y_min - .5), (y_max + .5)))
+rotate_data <- function(data, x_add = 0, y_add = 0) {
+  
+  # shear_matrix <- function(){ matrix(c(1,1,1,1), 2, 2) }
+  shear_matrix <- function(){ matrix(c(2, 1.2, 0, 1), 2, 2) }
+  # rotate_matrix <- function(x){ 
+  #   matrix(c(1,1,1,1), 2, 2) 
+  # }
+  
+  rotate_matrix <- function(x){
+    matrix(c(cos(x), sin(x), -sin(x), cos(x)), 2, 2)
+  }
+  data %>% 
+    dplyr::mutate(
+      geometry = .$geometry * shear_matrix() * rotate_matrix(pi/20) + c(x_add, y_add)
+    )
+}
 
-ca_counties <- st_crop(counties("CA"), c(xmin = x_min, xmax = x_max, ymin = y_min, ymax = y_max)) %>%
-  filter(GEOID %in% c("06003", "06109", "06043", "06009")) %>% 
-  st_as_sf()
+rotate_data_geom <- function(data, x_add = 0, y_add = 0) {
+  shear_matrix <- function(){ matrix(c(2, 1.2, 0, 1), 2, 2) }
+  
+  rotate_matrix <- function(x) { 
+    matrix(c(cos(x), sin(x), -sin(x), cos(x)), 2, 2) 
+  }
+  data %>% 
+    dplyr::mutate(
+      geom = .$geom * shear_matrix() * rotate_matrix(pi/20) + c(x_add, y_add)
+    )
+}
+```
+
+
+Create Hourly Raster Brick
+```{r}
+# Blank Plot
+hourly <- ggplot()
+
+# While Loop to Keep Adding Layers to Plot
+i <- 10 # Choosing to start at layer 10 because it looks a bit like the daily aggregation
+while(i <= 28){
+  
+  # Read layer from data
+  a <- raster(data, layer = i) %>% 
+    rasterToPolygons(na.rm = TRUE) %>% 
+    st_as_sf() %>% 
+    rename(value = 1) %>% 
+    st_as_sf()
+  
+  hourly <- hourly + 
+    geom_sf(data = a %>% rotate_data(y_add = y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
+    geom_sf(data = a %>% rotate_data(y_add = y_int*i), mapping = aes(fill = value), size = 0)
+  i = i + 1
+}
+
+```
+
+
+
+Polish Hourly Raster Brick
+```{r}
+hourly <- hourly +
+  scale_fill_distiller(palette = fill_palette, direction = -1)
+  labs(y = "\U2190 Hours \U2192",
+       caption = "Hourly Gridded Data") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 20, face = "plain", hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+hourly
+```
+
+
+
+Create Daily Raster Brick
+```{r}
+# Generate daily raster brick (taken from stagg)
+indices <- rep(1:(raster::nlayers(data)/24),each=24)
+clim_daily <- raster::stackApply(data, indices = indices, fun=mean)
+
+# Empty Plot
+daily <- ggplot()
+
+# While Loop to Keep Adding Layers to Plot
+i <- 1
+while(i <= 6){
+  
+  # Read layer from data
+  a <- raster(clim_daily, layer = i) %>% 
+    rasterToPolygons(na.rm = TRUE) %>% 
+    st_as_sf() %>% 
+    rename(value = 1) %>% 
+    st_as_sf()
+  
+  # Spacing out the layers a little more by doing 3*y_int*i
+  daily <- daily + 
+    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
+    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 0)
+  i = i + 1
+}
+
+```
+
+
+Polish Daily Raster Brick
+```{r}
+daily <- daily +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(y = "\U2190 Days \U2192",
+       caption = "Daily Gridded Data") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 20, face = "plain", hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+daily
+```
+
+
+Create Transformed Raster Brick
+```{r}
+clim_daily_sq <- clim_daily ^ 2
+
+daily_sq <- ggplot()
+
+# While Loop to Keep Adding Layers to Plot
+i <- 1
+while(i <= 6){
+  
+  # Read layer from data
+  a <- raster(clim_daily_sq, layer = i) %>% 
+    rasterToPolygons(na.rm = TRUE) %>% 
+    st_as_sf() %>% 
+    rename(value = 1) %>% 
+    st_as_sf()
+  
+  daily_sq <- daily_sq + 
+    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
+    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 0)
+  i = i + 1
+}
+
+
+
+
+```
+
+Polish Transformed Raster Bricks
+```{r}
+daily_1 <- daily +
+  theme(plot.caption = element_text(face = "plain")) +
+  labs(caption = "X") +
+  theme(plot.caption = element_text(size = 12))
+
+daily_sq <- daily_sq +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(caption = expression("X"^{2}),
+       y = "") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 12, hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+
+daily_1
+daily_sq
+```
+
+Aggregate by Day/Month/Year
+```{r}
+# Manually generate table of grid cells to turn into polygons (overlay_weights doesn't like using ERA5 grid as polygons)
+x_pos <- ((4.0*(360+ x_min-.5)):(4.0*(360 + x_max+.5) - 1)) / 4.0 # Vector of x positions
+y_pos <- ((4.0*(y_min-.5)):(4.0*(y_max+.5) - 1)) / 4.0 # Vector of y positions
+
+y_all <- sort((rep(y_pos, each = length(x_pos))), decreasing = TRUE) # Repeating each y position by length of x_pos
+
+x_all <- c() # Repeating vector x_pos by length of y_pos
+i <- length(y_pos)
+while(i >= 1){
+  x_all <- c(x_all, x_pos)
+  i = i - 1
+}
+
+grid_polys <- rasterToPolygons(crop(raster(era5_grid), c(360 +x_min-.5, 360 +x_max+.5, y_min-.5, y_max+.5))) %>% 
+  st_as_sf() %>% 
+  mutate(poly_id = as.character(1001:(length(x_all) + 1000))) %>% 
+  st_as_sf() 
+
+
+
+
+overlay_grid <- data.table(data.frame(x = x_all, 
+                           y = y_all,
+                           poly_id = as.character(1001:(length(x_all) + 1000)),
+                           w_area = 1,
+                           w_sum = 1)) # Putting it all together in an sf object representing our ERA5 grid
+
+# Get aggregated weights
+agged_grid <- staggregate_polynomial(data = data, overlay_weights = overlay_grid, daily_agg = "average", time_agg = "month", degree = 2)
+
+# Divide by Number of Days
+agged_grid[, ':=' (order_1 = ifelse(month == 2, order_1 / 29, order_1 / 31),
+                   order_2 = ifelse(month == 2, order_2 / 29, order_2 / 31))]
+
+# Run a while loop to separate "X" layers by months and add each to a plot
+monthly_gridded_1 <- ggplot()
+
+i <- 3
+while(i >= 1){
+  a <- agged_grid %>% 
+    data.frame() %>% 
+    filter(month == i) %>% 
+    dplyr::select(poly_id, order_1) %>% 
+    inner_join(grid_polys, by = "poly_id") %>% 
+    st_as_sf()
+  
+  monthly_gridded_1 <- monthly_gridded_1 + 
+    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_1), size = 2, color = "black") +
+    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_1), size = 0)
+  
+  i = i - 1
+}
+
+# Run a while loop to separate "X^2" layers by months and add each to a plot
+monthly_gridded_2 <- ggplot()
+
+i <- 3
+while(i >= 1){
+  a <- agged_grid %>% 
+    data.frame() %>% 
+    filter(month == i) %>% 
+    dplyr::select(poly_id, order_2) %>% 
+    inner_join(grid_polys, by = "poly_id") %>% 
+    st_as_sf()
+  
+  monthly_gridded_2 <- monthly_gridded_2 + 
+    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_2), size = 2, color = "black") +
+    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_2), size = 0)
+  
+  i = i - 1
+}
+
+```
+
+Polish Monthly Gridded Brick
+```{r}
+monthly_gridded_1 <- monthly_gridded_1 +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(y = "\U2190 Days / Months / Years \U2192",
+       caption = "X") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 12, face = "plain", hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+monthly_gridded_2 <- monthly_gridded_2 +
+  scale_fill_distiller(palette = fill_palette, direction = -1)  +
+  labs(caption = expression("X"^{2}),
+       y = "") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 12, hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+
+
+monthly_gridded_1
+monthly_gridded_2
+
+```
+
+
+Aggregate by Polygon
+```{r}
+
+# Get overlay weights
+overlay <- overlay_weights(ca_counties, "GEOID")
+
+# Get aggregated weights
+agged_data <- staggregate_polynomial(data = data, overlay_weights = overlay, daily_agg = "average", time_agg = "month", degree = 2)
+
+# Divide by Number of Days
+agged_data[, ':=' (order_1 = ifelse(month == 2, order_1 / 29, order_1 / 31),
+                   order_2 = ifelse(month == 2, order_2 / 29, order_2 / 31))]
+
+# Run a while loop to separate "X" layers by months and add each to a plot
+monthly_county_1 <- ggplot()
+
+i <- 3
+while(i >= 1){
+  a <- agged_data %>% 
+    data.frame() %>% 
+    filter(month == i) %>% 
+    dplyr::select(poly_id, order_1) %>% 
+    rename(GEOID = poly_id) %>% 
+    inner_join(ca_counties, by = "GEOID") %>% 
+    st_as_sf()  
+  
+  box <- st_make_grid(a, n = 1) %>% 
+    data.frame() %>% 
+    st_as_sf() %>% 
+    rotate_data(y_add = 10*y_int*(4 - i))
+  
+  a <- a %>% 
+    rotate_data(y_add = 10*y_int*(4 - i))
+  
+  
+  
+  monthly_county_1 <- monthly_county_1 +
+    geom_sf(data = box, size = 1, color = "grey", fill = "white") +
+    geom_sf(data = a, mapping = aes(fill = order_1), size = 2, color = "black") +
+    geom_sf(data = a, mapping = aes(fill = order_1), size = 0)
+  
+  i = i - 1
+}
+
+
+monthly_county_2 <- ggplot()
+
+i <- 3
+while(i >= 1){
+  a <- agged_data %>% 
+    data.frame() %>% 
+    filter(month == i) %>% 
+    dplyr::select(poly_id, order_2) %>% 
+    rename(GEOID = poly_id) %>% 
+    inner_join(ca_counties, by = "GEOID") %>% 
+    st_as_sf()
+  
+   box <- st_make_grid(a, n = 1) %>% 
+    data.frame() %>% 
+    st_as_sf() %>% 
+    rotate_data(y_add = 10*y_int*(4 - i))
+  
+  a <- a %>% 
+    rotate_data(y_add = 10*y_int*(4 - i))
+  
+  monthly_county_2 <- monthly_county_2 + 
+     geom_sf(data = box, size = 1, color = "grey", fill = "white") +
+    geom_sf(data = a, mapping = aes(fill = order_2), size = 2, color = "black") +
+    geom_sf(data = a, mapping = aes(fill = order_2), size = 0)
+  
+  i = i - 1
+}
+```
+
+Polish Monthly Polygon Brick
+```{r}
+monthly_county_1 <- monthly_county_1 +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(y = "\U2190 Days / Months / Years \U2192",
+       caption = "X") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 12, face = "plain", hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+monthly_county_2 <- monthly_county_2 +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(caption = expression("X"^{2}),
+       y = "") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 12, hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+monthly_county_1
+monthly_county_2
 ```

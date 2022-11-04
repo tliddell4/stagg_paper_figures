@@ -75,8 +75,8 @@ Raster Plot
 ```{r}
 # Transform fine resolution raster into a data frame for plotting
 cropland_df <- as.data.frame(cropland_raster, xy = TRUE) %>% 
-  filter(x >= min(cropland_table$x) & x <= max(cropland_table$x),
-         y >= min(cropland_table$y) & y <= max(cropland_table$y))
+  filter(x >= min(cropland_table$x) - .125 & x <= max(cropland_table$x) + .125,
+         y >= min(cropland_table$y) - .125 & y <= max(cropland_table$y) + .125) # Making the raster fit the grid
 
 
 # Plot the Raster
