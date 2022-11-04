@@ -42,6 +42,7 @@ Read in Data
 # Polygons for whole state
 state_counties <- counties(state_abb)
 
+
 # Polygon only of one county
 county <- state_counties %>%  # We are using one county from the tigris package
   filter(GEOID == county_geoid) %>% 
@@ -73,7 +74,9 @@ overlay <- overlay_weights(polygons = county, polygon_id_col ="GEOID", secondary
 Raster Plot
 ```{r}
 # Transform fine resolution raster into a data frame for plotting
-cropland_df <- as.data.frame(cropland_raster, xy = TRUE)
+cropland_df <- as.data.frame(cropland_raster, xy = TRUE) %>% 
+  filter(x >= min(cropland_table$x) & x <= max(cropland_table$x),
+         y >= min(cropland_table$y) & y <= max(cropland_table$y))
 
 
 # Plot the Raster
@@ -83,15 +86,14 @@ ggplot(cropland_df) +
   theme_void() +                                             
   theme(legend.position = "none",
         plot.background = element_rect(color = "black", size = 1)) +
-  geom_sf(data = st_crop(x = state_counties,                 # Adding in a map of all counties for location context
-                         y = county_extent,), 
-                         alpha = 0) +
+  geom_sf(data = county,                 # Adding in a map of all counties for location context
+            alpha = 0) +
   geom_tile(data = cropland_table, mapping = aes(x = x, y = y),   # Adding grid over the top to contextualize the image
-            alpha = 0, size = 1, color = grid_color)  +      
-  coord_sf(xlim = c(xmin(county_extent),              # Cropping the image to raster
-                    xmax(county_extent)),
-           ylim = c(ymin(county_extent), 
-                    ymax(county_extent))) +
+            alpha = 0, size = 2, color = grid_color)  +      
+  #coord_sf(xlim = c(xmin(county_extent),              # Cropping the image to raster
+   #                 xmax(county_extent)),
+    #       ylim = c(ymin(county_extent), 
+     #               ymax(county_extent))) +
   theme(plot.background = element_blank())
 
 ```
