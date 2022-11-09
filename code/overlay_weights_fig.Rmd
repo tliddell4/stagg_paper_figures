@@ -82,6 +82,8 @@ cropland_df <- as.data.frame(cropland_raster, xy = TRUE) %>%
 # Plot the Raster
 ggplot(cropland_df) +
   geom_tile(aes(x,y, fill = cropland_NW_2015)) +             # Raster Data
+  scale_x_continous(expand = c(0,0)) +
+  scale_y_continous(expand = c(0,0)) +
   scale_fill_gradient(low = "white", high = cropland_fill) + # Setting color scale
   theme_void() +                                             
   theme(legend.position = "none",
