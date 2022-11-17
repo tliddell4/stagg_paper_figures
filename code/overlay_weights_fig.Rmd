@@ -104,21 +104,36 @@ Plot of Resampled Secondary Weights
 ```{r}
 ggplot() +
     geom_sf(data = county, alpha = 0) +
-  geom_tile(data = cropland_table, mapping = aes(x = x, y = y, alpha = weight), fill = cropland_fill, size = 2, color = grid_color) +
-  scale_alpha(range = c(0, .5)) + # Define alpha range aesthetically (alphas corresponding to weights would all look empty)
+  geom_tile(data = cropland_table, mapping = aes(x = x, y = y, alpha = weight*100), fill = cropland_fill, size = 2, color = grid_color) +
+  scale_alpha(range = c(0, .8)) + # Define alpha range aesthetically (alphas corresponding to weights would all look empty)
   theme_void() +
-  theme(legend.position = "none") 
+  labs(alpha = "Percentage of Cell Covered 
+by Secondary Weights Raster:") +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        plot.margin = margin(b = 10))
 ```
+
+Sole Polygon and Grid Plot
+```{r}
+ggplot() +
+  geom_sf(data = county, fill = w_area_fill, color = "black", alpha = .6) +
+  geom_tile(data = cropland_table, mapping = aes(x = x, y = y), alpha = 0, size = 2, color = grid_color) +
+  theme_void()
+```
+
 
 Area Weights Plot
 ```{r}
 # Same idea as previous image
 ggplot() +
-  geom_sf(data = st_shift_longitude(county), fill = polygon_fill, size = 1) +
-  geom_tile(data = overlay, mapping = aes(x = x, y = y, alpha = w_area), fill = w_area_fill, size = 2, color = grid_color) +
-  scale_alpha(range = c(0,.5)) +
+  geom_sf(data = st_shift_longitude(county), fill = polygon_fill) +
+  geom_tile(data = overlay, mapping = aes(x = x, y = y, alpha = 100*w_area), fill = w_area_fill, size = 2, color = grid_color) +
+  scale_alpha_continuous(range = c(0,.5)) +
   theme_void() +
-  theme(legend.position = "none")
+  labs(alpha = "Percentage of Polygon Captured by Cell:") +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
 ```
 
 Cropland Weights Normalized by Area
@@ -130,6 +145,7 @@ ggplot() +
   scale_alpha(range = c(0, .5)) +
   #geom_label(data = overlay, mapping = aes(x = x, y = y, label = weight)) +
   theme_void() +
-  theme(legend.position = "none") 
+  labs(alpha = "Area Normalized Secondary Weights") +
+  theme(legend.position = "bottom")
 ```
 
