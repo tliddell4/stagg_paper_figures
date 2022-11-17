@@ -120,9 +120,9 @@ while(i <= 28){
 Polish Hourly Raster Brick
 ```{r}
 hourly <- hourly +
-  scale_fill_distiller(palette = fill_palette, direction = -1)
-  labs(y = "\U2190 Hours \U2192",
-       caption = "Hourly Gridded Data") +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  # labs(y = "\U2190 Hours \U2192",
+       # caption = "Hourly Gridded Data") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
@@ -172,8 +172,8 @@ Polish Daily Raster Brick
 ```{r}
 daily <- daily +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
-  labs(y = "\U2190 Days \U2192",
-       caption = "Daily Gridded Data") +
+  # labs(y = "\U2190 Days \U2192",
+       # caption = "Daily Gridded Data") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
@@ -220,13 +220,14 @@ Polish Transformed Raster Bricks
 ```{r}
 daily_1 <- daily +
   theme(plot.caption = element_text(face = "plain")) +
-  labs(caption = "X") +
+  # labs(caption = "X") +
   theme(plot.caption = element_text(size = 12))
 
+
 daily_sq <- daily_sq +
-  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
-  labs(caption = expression("X"^{2}),
-       y = "") +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  # labs(caption = expression("X"^{2}),
+       # y = "") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
@@ -324,8 +325,8 @@ Polish Monthly Gridded Brick
 ```{r}
 monthly_gridded_1 <- monthly_gridded_1 +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
-  labs(y = "\U2190 Days / Months / Years \U2192",
-       caption = "X") +
+  # labs(y = "\U2190 Days / Months / Years \U2192",
+       # caption = "X") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
@@ -337,9 +338,9 @@ monthly_gridded_1 <- monthly_gridded_1 +
         panel.background = element_blank())
 
 monthly_gridded_2 <- monthly_gridded_2 +
-  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log")  +
-  labs(caption = expression("X"^{2}),
-       y = "") +
+  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log", values = scales::rescale(0:30, c(0,1)))  +
+  # labs(caption = expression("X"^{2}),
+       # y = "") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
@@ -436,8 +437,8 @@ Polish Monthly Polygon Brick
 ```{r}
 monthly_county_1 <- monthly_county_1 +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
-  labs(y = "\U2190 Days / Months / Years \U2192",
-       caption = "X") +
+  # labs(y = "\U2190 Days / Months / Years \U2192",
+       # caption = "X") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
@@ -450,8 +451,8 @@ monthly_county_1 <- monthly_county_1 +
 
 monthly_county_2 <- monthly_county_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
-  labs(caption = expression("X"^{2}),
-       y = "") +
+  # labs(caption = expression("X"^{2}),
+       # y = "") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),

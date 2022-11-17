@@ -1,0 +1,144 @@
+---
+title: "Demonstration Figures"
+output: html_document
+date: "2022-11-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Load Packages
+```{r}
+library(stagg)
+library(tidyverse)
+library(raster)
+library(sf)
+library(haven)
+library(here)
+library(tigris)
+library(data.table)
+library(janitor)
+library(broom)
+library(readxl)
+library(lfe)
+```
+
+Read in Data, Clean, and Merge
+```{r}
+# Data on deaths
+deaths <- read_dta(here("data/CountyYearMonth_1999_2019.dta")) %>% 
+  as.data.table() %>% 
+  filter(!is.na(countycode), !is.na(deaths)) %>% # Remove any rows with na in deaths column or in county code
+  rename(poly_id = countycode)
+
+# Population data from census estimates
+pop_2000s <- read.csv(here("data/co-est00int-tot.csv")) %>%
+  clean_names()
+
+pop_2010s <- read_xlsx(here("data/co-est2019-annres.xlsx"), skip = 3) %>% 
+  clean_names() %>% 
+  rename(county_state = 1)
+
+# Clean and merge population data
+pop_all <- pop_2000s %>% 
+  mutate(county_state = paste0(".", ctyname, ", ", stname)) %>% 
+  right_join(pop_2010s, by = "county_state") %>% 
+  rename(x2000 = popestimate2000, x2001 = popestimate2001, x2002 = popestimate2002,
+         x2003 = popestimate2003, x2004 = popestimate2004, x2005 = popestimate2005,
+         x2006 = popestimate2006, x2007 = popestimate2007, x2008 = popestimate2008,
+         x2009 = popestimate2009) %>% 
+  mutate(poly_id = as.numeric(paste0(state, sprintf("%03d", county)))) %>% 
+  dplyr::select(poly_id, x2000, x2001, x2002, x2003, x2004, x2005, x2006, x2007, x2008,
+         x2009, x2010, x2011, x2012, x2013, x2014, x2015, x2016, x2017, x2018, x2019) %>% 
+  pivot_longer(cols = 2:21, names_to = "year", values_to = "population") %>% 
+  mutate(year = as.numeric(substr(year, start = 2, stop = 5)))
+
+# Counties and their states (use to correctly identify each county's state)
+county_states = counties()
+
+county_states <- county_states %>% 
+  clean_names() %>% 
+  as.data.frame() %>% 
+  mutate(poly_id = as.numeric(geoid)) %>%  # Assuming same county fps system in tigris counties and health data
+  dplyr::select(statefp, poly_id)
+
+# Binned temperature
+temp_bin <- rbind(fread(here("data/temp_binned_2000_2004_US_counties_ERA5_pop_weights.csv")),
+                  fread(here("data/temp_binned_2005_2009_US_counties_ERA5_pop_weights.csv")),                                                fread(here("data/temp_binned_2010_2014_US_counties_ERA5_pop_weights.csv")),
+                  fread(here("data/temp_binned_2015_2019_US_counties_ERA5_pop_weights.csv")))
+
+# Quadratic Precipitation
+prcp_poly <- rbind(
+  fread(here("data/prcp-polynomial-2000-2004-US-counties-prcp-era5-pop_weights.csv")),
+  fread(here("data/prcp-polynomial-2005-2009-US-counties-prcp-era5-pop_weights.csv")),
+  fread(here("data/prcp-polynomial-2010-2014-US-counties-prcp-era5-pop_weights.csv")),
+  fread(here("data/prcp-polynomial-2015-2019-US-counties-prcp-era5-pop_weights.csv"))) %>% 
+  rename(order_1_prcp = order_1,
+         order_2_prcp = order_2) # to distinguish between temp polynomial and prcp polynomial
+
+# Merge all data together
+all_data <- inner_join(temp_bin, prcp_poly, by = c("year", "month", "poly_id")) %>% 
+  inner_join(deaths, by = c("year", "month", "poly_id")) %>% 
+  inner_join(county_states, by = "poly_id") %>% 
+  inner_join(pop_all, by = c("poly_id", "year")) %>% 
+  mutate(mortality = deaths / population)
+
+```
+
+Regression
+```{r}
+# Define formula to regress mortality on temperature bins, controlling for precipitation (quadratic) with fixed effects for county_month and state_year
+bins <- c("bin_ninf_to_n10", "bin_n10_to_n5", "bin_n5_to_0", "bin_0_to_5", "bin_5_to_10", "bin_10_to_15", "bin_20_to_25", "bin_25_to_30", "bin_30_to_inf")
+
+bin_string <- ""
+i <- 1
+while(i <= length(bins)){
+  if(i != length(bins)){
+    bin_string <- paste0(bin_string, bins[i], " + ")
+  }
+  else{
+    bin_string <- paste0(bin_string, bins[i])
+  }
+  
+  i = i + 1
+}
+
+formula_bin <- as.formula(paste0("log(mortality) ~ ", bin_string, " + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+
+bin_regression <- felm(formula_bin, all_data)
+
+
+```
+
+
+Plot Regression Results
+```{r}
+# Turn regression into a data frame to extract coefficients and plot
+plot_data <- tidy(bin_regression, conf.int = TRUE)
+
+plot_data <- plot_data %>% 
+  filter(term %in% bins) %>% 
+  add_row(term = "bin_15_to_20", estimate = 0, conf.low = 0, conf.high = 0) %>% 
+  mutate(graph_index = c(1,2,3,4,5,6,8,9,10,7))
+
+
+ggplot(data = plot_data) +
+  geom_ribbon(mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = "darkgrey", fill = "lightgrey") +
+  geom_line(mapping = aes(x = graph_index, y = estimate), size = 1) +
+  geom_point(mapping = aes(x = graph_index, y = estimate), color = "gold") +
+  theme_minimal() +
+  scale_x_continuous(labels = c("<n10", "n10-n5", "n5-0", "0-5", "5-10",
+                                "10-15", "15-20", "20-25", "25-30", ">30"),
+                     breaks = c(1,2,3,4,5,6,7,8,9,10),
+                     expand = c(0,0)) +
+  scale_y_continuous(breaks = c(-.002, 0, .002, .004, .006, .008),
+                     limits = c(-.002, .008)) +
+  labs(x = "Daily average temperature (C)",
+       y = "Estimated Impact on Log Mortality") +
+  theme(axis.line = element_line(color = "black"),
+        plot.margin = margin(0, 7.5, 0, 0))
+```
+
+
