@@ -128,7 +128,7 @@ hourly <- hourly +
         axis.line = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size = 16),
-        legend.position = "none",
+        legend.position = "bottom",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
         panel.background = element_blank())
