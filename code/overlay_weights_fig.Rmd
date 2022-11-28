@@ -145,7 +145,7 @@ ggplot() +
   scale_alpha(range = c(0, .5)) +
   #geom_label(data = overlay, mapping = aes(x = x, y = y, label = weight)) +
   theme_void() +
-  labs(alpha = "Area Normalized Secondary Weights") +
+  labs(alpha = "Area Normalized Secondary Weights:") +
   theme(legend.position = "bottom")
 ```
 
