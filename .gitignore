@@ -4,3 +4,6 @@
 .Ruserdata
 *.tif
 *.nc
+*.pdf
+*.png
+*.DS_Store
