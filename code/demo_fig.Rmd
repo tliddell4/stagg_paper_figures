@@ -66,16 +66,24 @@ county_states <- county_states %>%
 
 # Binned temperature
 temp_bin <- rbind(fread(here("data/temp_binned_2000_2004_US_counties_ERA5_pop_weights.csv")),
-                  fread(here("data/temp_binned_2005_2009_US_counties_ERA5_pop_weights.csv")),                                               fread(here("data/temp_binned_2010_2014_US_counties_ERA5_pop_weights.csv")),
+                  fread(here("data/temp_binned_2005_2009_US_counties_ERA5_pop_weights.csv")),                                              fread(here("data/temp_binned_2010_2014_US_counties_ERA5_pop_weights.csv")),
                   fread(here("data/temp_binned_2015_2019_US_counties_ERA5_pop_weights.csv")))
 
 # Polynomial Temperature
-temp_poly <- rbind(fread(here("data/temp_polynomial_2000_2004_US_counties_ERA5_pop_weights.csv")),
-                   fread(here("data/temp_polynomial_2005_2009_US_counties_ERA5_pop_weights.csv")),
-                   fread(here("data/temp_polynomial_2010_2014_US_counties_ERA5_pop_weights.csv")),
-                   fread(here("data/temp_polynomial_2015_2019_US_counties_ERA5_pop_weights.csv"))) %>% 
+temp_poly <- rbind(
+  fread(here("data/temp_polynomial_2000_2004_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/temp_polynomial_2005_2009_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/temp_polynomial_2010_2014_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/temp_polynomial_2015_2019_US_counties_ERA5_pop_weights.csv"))) %>% 
   rename(order_1_temp = order_1, order_2_temp = order_2, order_3_temp = order_3,
          order_4_temp = order_4, order_5_temp = order_5) # To distinguish from prcp
+
+# Spline Temperature
+temp_spline <- rbind(
+  fread(here("data/temp_spline_2000_2004_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/temp_spline_2005_2009_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/temp_spline_2010_2014_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/temp_spline_2015_2019_US_counties_ERA5_pop_weights.csv")))
 
 # Quadratic Precipitation
 prcp_poly <- rbind(
@@ -89,6 +97,7 @@ prcp_poly <- rbind(
 # Merge all data together
 all_data <- inner_join(temp_bin, prcp_poly, by = c("year", "month", "poly_id")) %>% 
   full_join(temp_poly, by = c("year", "month", "poly_id")) %>% 
+  full_join(temp_spline, by = c("year", "month", "poly_id")) %>% 
   inner_join(deaths, by = c("year", "month", "poly_id")) %>% 
   inner_join(county_states, by = "poly_id") %>% 
   inner_join(pop_all, by = c("poly_id", "year")) %>% 
@@ -114,40 +123,84 @@ while(i <= length(bins)){
   i = i + 1
 }
 
-formula_bin <- as.formula(paste0("log(mortality) ~ ", bin_string, " + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+bin_formula <- as.formula(paste0("log(mortality) ~ ", bin_string, " + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
 
-bin_regression <- felm(formula_bin, all_data)
+bin_regression <- felm(bin_formula, all_data)
 
 
 poly_string <- "order_1_temp + order_2_temp + order_3_temp + order_4_temp" # Order 5 coefficient not significant, removed and re-ran, order 4 was significant
 
-formula_poly <- as.formula(paste0("log(mortality) ~ ", poly_string, "+ order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+poly_formula <- as.formula(paste0("log(mortality) ~ ", poly_string, "+ order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
 
-poly_regression <- felm(formula_poly, all_data)
+poly_regression <- felm(poly_formula, all_data)
 
-summary(poly_regression)
+spline_formula <- as.formula(paste0("log(mortality) ~ value + term_1 + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+
+spline_regression <- felm(spline_formula, all_data)
+
+
 ```
 
 
 Plot Regression Results
 ```{r}
 # Turn regression into a data frame to extract coefficients and plot
-plot_data_bin <- tidy(bin_regression, conf.int = TRUE)
+bin_plot_data <- tidy(bin_regression, conf.int = TRUE)
 
-plot_data_bin <- plot_data_bin %>% 
+bin_plot_data <- bin_plot_data %>% 
   filter(term %in% bins) %>% 
   add_row(term = "bin_15_to_20", estimate = 0, conf.low = 0, conf.high = 0) %>% 
   mutate(graph_index = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 22.5, 27.5,32.5, 17.5))
 
+poly_plot_data <- tidy(poly_regression, conf.int = TRUE)
 
-ggplot(data = plot_data_bin) +
-  geom_ribbon(mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = "darkgrey", fill = "lightgrey") +
-  geom_line(mapping = aes(x = graph_index, y = estimate), size = 1) +
-  geom_point(mapping = aes(x = graph_index, y = estimate), color = "gold") +
+poly_plot_function <- function(x){
+  poly_plot_data$estimate[4]*(x)^4 + 
+  poly_plot_data$estimate[3]*x^3 +
+  poly_plot_data$estimate[2]*x^2 +
+  poly_plot_data$estimate[1]*x -
+  poly_plot_data$estimate[4]*17.5^4 - 
+  poly_plot_data$estimate[3]*17.5^3 -
+  poly_plot_data$estimate[2]*17.5^2 -
+  poly_plot_data$estimate[1]*17.5}
+
+spline_plot_data <- tidy(spline_regression, conf.int = TRUE)
+
+spline_knot_locs <- c(-2.5, 17.5, 27.5)
+
+spline_term_calc_function <- function(x){  
+  part1 <- ifelse((x - spline_knot_locs[1]) > 0,
+                   (x - spline_knot_locs[1])^3, 0)
+
+  part2 <- (ifelse((x - spline_knot_locs[length(spline_knot_locs) - 1]) > 0,
+                 (x - spline_knot_locs[length(spline_knot_locs) - 1])^3 *
+                   ((spline_knot_locs[length(spline_knot_locs)] - spline_knot_locs[1]) / (spline_knot_locs[length(spline_knot_locs)] - spline_knot_locs[length(spline_knot_locs) - 1])), 0))
+
+
+  part3 <- (ifelse((x - spline_knot_locs[length(spline_knot_locs)]) > 0,
+                 (x - spline_knot_locs[length(spline_knot_locs)])^3 *
+                   ((spline_knot_locs[length(spline_knot_locs) - 1] - spline_knot_locs[1]) / (spline_knot_locs[length(spline_knot_locs)] - spline_knot_locs[length(spline_knot_locs) - 1])), 0))
+  
+  return(spline_term <- part1 - part2 + part3)
+  
+}
+
+spline_plot_function <- function(x){
+  
+    spline_plot_data$estimate[1]*x + 
+    spline_plot_data$estimate[2]*spline_term_calc_function(x) - 
+    spline_plot_data$estimate[1]*17.5 -
+    spline_plot_data$estimate[2]*spline_term_calc_function(17.5)
+  
+}
+
+
+ggplot() +
+  geom_ribbon(data = bin_plot_data, mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = "darkgrey", fill = "lightgrey") +
+  geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 1) +
+  geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "gold") +
   theme_minimal() +
-  scale_x_continuous(labels = c("<n10", "n10-n5", "n5-0", "0-5", "5-10",
-                                "10-15", "15-20", "20-25", "25-30", ">30"),
-                     breaks = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 17.5, 22.5, 27.5,32.5),
+  scale_x_continuous(breaks = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 17.5, 22.5, 27.5,32.5),
                      expand = c(0,0)) +
   scale_y_continuous(breaks = c(-.002, 0, .002, .004, .006, .008),
                      limits = c(-.002, .008)) +
@@ -155,25 +208,9 @@ ggplot(data = plot_data_bin) +
        y = "Estimated Impact on Log Mortality") +
   theme(axis.line = element_line(color = "black"),
         plot.margin = margin(0, 7.5, 0, 0)) +
-  geom_function(fun = poly_plot_function, color = "blue")
+  geom_function(fun = poly_plot_function, color = "blue") +
+  geom_function(fun = spline_plot_function, color = "red")
 
-
-plot_data_poly <- tidy(poly_regression, conf.int = TRUE)
-
-poly_plot_function <- function(x){plot_data_poly$estimate[4]*(x)^4 + 
-                                  plot_data_poly$estimate[3]*x^3 +
-                                  plot_data_poly$estimate[2]*x^2 +
-                                  plot_data_poly$estimate[1]*x -
-                                  plot_data_poly$estimate[4]*17.5^4 - 
-                                  plot_data_poly$estimate[3]*17.5^3 -
-                                  plot_data_poly$estimate[2]*17.5^2 -
-                                  plot_data_poly$estimate[1]*17.5}
-
-easy_function <- function(x){x^2}
-
-ggplot() + 
-  geom_function(fun = poly_plot_function) +
-  scale_x_continuous(limits = c(-10, 30))
   
 ```
 

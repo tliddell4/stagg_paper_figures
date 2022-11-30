@@ -54,8 +54,7 @@ y_int <- .5
 # Raster brick 1 year of temp data !!!This file is to big for the repo, you must have it in your local data folder!!!
 data <- crop(brick(here("data", "era5_temp_2020.nc")), c((360 + (x_min - .5)), 360 + (x_max + .5), (y_min - .5), (y_max + .5)))
 
-# Converting to C
-data <- data -273.15
+data <- data - 250
 ```
 
 Define Rotation Functions (This Code is Not My Own, I don't understand it very well)
@@ -97,8 +96,8 @@ Create Hourly Raster Brick
 hourly <- ggplot()
 
 # While Loop to Keep Adding Layers to Plot
-i <- 10 # Choosing to start at layer 10 because it looks a bit like the daily aggregation
-while(i <= 28){
+i <- 4331 # Choosing to start at layer 10 because it looks a bit like the daily aggregation
+while(i <= 4348){
   
   # Read layer from data
   a <- raster(data, layer = i) %>% 
@@ -128,7 +127,7 @@ hourly <- hourly +
         axis.line = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_text(size = 16),
-        legend.position = "bottom",
+        legend.position = "none",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
         panel.background = element_blank())
@@ -148,8 +147,8 @@ clim_daily <- raster::stackApply(data, indices = indices, fun=mean)
 daily <- ggplot()
 
 # While Loop to Keep Adding Layers to Plot
-i <- 1
-while(i <= 6){
+i <- 180
+while(i <= 185){
   
   # Read layer from data
   a <- raster(clim_daily, layer = i) %>% 
@@ -195,8 +194,8 @@ clim_daily_sq <- clim_daily ^ 2
 daily_sq <- ggplot()
 
 # While Loop to Keep Adding Layers to Plot
-i <- 1
-while(i <= 6){
+i <- 180
+while(i <= 185){
   
   # Read layer from data
   a <- raster(clim_daily_sq, layer = i) %>% 
@@ -225,7 +224,7 @@ daily_1 <- daily +
 
 
 daily_sq <- daily_sq +
-  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
   # labs(caption = expression("X"^{2}),
        # y = "") +
   theme(axis.ticks = element_blank(),
@@ -284,8 +283,8 @@ agged_grid[, ':=' (order_1 = ifelse(month == 2, order_1 / 29, order_1 / 31),
 # Run a while loop to separate "X" layers by months and add each to a plot
 monthly_gridded_1 <- ggplot()
 
-i <- 3
-while(i >= 1){
+i <- 8
+while(i >= 6){
   a <- agged_grid %>% 
     data.frame() %>% 
     filter(month == i) %>% 
@@ -303,8 +302,8 @@ while(i >= 1){
 # Run a while loop to separate "X^2" layers by months and add each to a plot
 monthly_gridded_2 <- ggplot()
 
-i <- 3
-while(i >= 1){
+i <- 8
+while(i >= 6){
   a <- agged_grid %>% 
     data.frame() %>% 
     filter(month == i) %>% 
@@ -325,7 +324,7 @@ Polish Monthly Gridded Brick
 ```{r}
 monthly_gridded_1 <- monthly_gridded_1 +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
-  labs(y = "\U2190 Days / Months / Years \U2192") +
+  #labs(y = "\U2190 Days / Months / Years \U2192") +
        # caption = "X") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
@@ -338,7 +337,7 @@ monthly_gridded_1 <- monthly_gridded_1 +
         panel.background = element_blank())
 
 monthly_gridded_2 <- monthly_gridded_2 +
-  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log", values = scales::rescale(0:30, c(0,1)))  +
+  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log")  +
   # labs(caption = expression("X"^{2}),
        # y = "") +
   theme(axis.ticks = element_blank(),
@@ -375,8 +374,8 @@ agged_data[, ':=' (order_1 = ifelse(month == 2, order_1 / 29, order_1 / 31),
 # Run a while loop to separate "X" layers by months and add each to a plot
 monthly_county_1 <- ggplot()
 
-i <- 3
-while(i >= 1){
+i <- 8
+while(i >= 6){
   a <- agged_data %>% 
     data.frame() %>% 
     filter(month == i) %>% 
@@ -407,8 +406,8 @@ while(i >= 1){
 
 monthly_county_2 <- ggplot()
 
-i <- 3
-while(i >= 1){
+i <- 8
+while(i >= 6){
   a <- agged_data %>% 
     data.frame() %>% 
     filter(month == i) %>% 

@@ -8,9 +8,6 @@ date: "2022-11-17"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
-Note: This figure reuses the raster brick from the staggregate_fig.Rmd. Thus, this document only creates the stack of county mortality data
-
 Load Libraries
 ```{r}
 library(tigris)
@@ -32,8 +29,10 @@ Read in Data
 ```{r}
 
 # County polygons
-ca_counties <- counties("CA") %>%
+counties <- counties() %>%
   mutate(poly_id = as.numeric(GEOID)) %>% 
+  filter(poly_id < 60000) %>%
+  filter(!poly_id %in% 2000:2999, !poly_id %in% 15000:15999)
   st_as_sf()
 
 # Deaths Data
@@ -58,10 +57,14 @@ pop_data <- read_xlsx(here("data/co-est2019-annres.xlsx"), skip = 3) %>%
   filter(!is.na(poly_id))
 
 # Merge polyogns, deaths, and population
-mortality_data <- full_join(deaths_data,  pop_data, by = "poly_id") %>% 
+mortality_data <- right_join(deaths_data,  pop_data, by = "poly_id") %>% 
   mutate(mortality = deaths / x2019) %>% 
-  full_join(ca_counties, by = "poly_id") %>% 
+  inner_join(counties, by = "poly_id") %>% 
   st_as_sf()
+
+# Raster brick 1 year of temp data !!!This file is to big for the repo, you must have it in your local data folder!!!
+data <- crop(brick(here("data", "era5_temp_2020.nc")), extent(st_shift_longitude(counties)))
+data <- data - 273.15
 
 ```
 
@@ -99,6 +102,51 @@ rotate_data_geom <- function(data, x_add = 0, y_add = 0) {
 ```
 
 
+Create Hourly Raster Brick
+```{r}
+# Blank Plot
+hourly <- ggplot()
+
+# While Loop to Keep Adding Layers to Plot
+i <- 4331 # Choosing to start at layer 10 because it looks a bit like the daily aggregation
+while(i <= 4340){
+  
+  # Read layer from data
+  a <- raster(data, layer = i) %>% 
+    rasterToPolygons(na.rm = TRUE) %>% 
+    st_as_sf() %>% 
+    rename(value = 1) %>% 
+    st_as_sf()
+  
+  hourly <- hourly + 
+    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
+    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), color = NA)
+  i = i + 1
+}
+
+```
+
+
+
+Polish Hourly Raster Brick
+```{r}
+hourly1 <- hourly +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  # labs(y = "\U2190 Hours \U2192",
+       # caption = "Hourly Gridded Data") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 16),
+        legend.position = "none",
+        plot.caption = element_text(size = 20, face = "plain", hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+
+hourly1
+```
+
 Create stack of monthly mortality data
 ```{r}
 mortality_plot <- ggplot()
@@ -120,9 +168,9 @@ while(i >= 6){
     rotate_data(y_add = 10*y_int*(9 - i))
   
   mortality_plot <- mortality_plot +
-    geom_sf(data = box, size = 1, color = "black", fill = "white") +
+    geom_sf(data = box, size = .1, color = "black", fill = "white") +
     #geom_sf(data = a, mapping = aes(fill = order_1), size = 2, color = "black") +
-    geom_sf(data = a, mapping = aes(fill = 1000*mortality), size = .25) +
+    geom_sf(data = a, mapping = aes(fill = 1000*mortality), color = NA) +
     geom_sf(data = box, size = 1, color = "black", fill = NA)
   
   i = i - 1
@@ -133,7 +181,7 @@ while(i >= 6){
 Polish stack of monthly mortality data
 ```{r}
 mortality_plot <- mortality_plot +
-  scale_fill_gradient2(low = "white", high = "firebrick3", midpoint = 0.2) +
+  scale_fill_gradient2(low = "white", high = "firebrick3", midpoint = 0.2, na.value = "grey95") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
