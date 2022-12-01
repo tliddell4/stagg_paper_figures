@@ -32,8 +32,8 @@ county_geoid <- "06107"
 polygon_fill <- "white"
 cropland_fill <- "gold"
 grid_color <- "grey"
-w_area_fill <- "dodgerblue"
-combined_fill <- "darkgreen"
+w_area_fill <- "#61B1FF"
+combined_fill <- "#7fb17f"
 ```
 
 
@@ -46,17 +46,24 @@ state_counties <- counties(state_abb)
 # Polygon only of one county
 county <- state_counties %>%  # We are using one county from the tigris package
   filter(GEOID == county_geoid) %>% 
-  st_as_sf()
-
+  st_as_sf() 
 
 # Get the extent of the county with buffer
-county_extent <- extent(extent(county) + .25)
+# county_extent <- extent(extent(county) + 0.25)
 
+## testing to try to get fig 2a right
+county_extent0 <- extent(county)
+county_extent0@xmin <- county_extent0@xmin - 0.5
+county_extent0@xmax <- county_extent0@xmax + 0.5
+county_extent0@ymin <- county_extent0@ymin - 0.5
+county_extent0@ymax <- county_extent0@ymax + 0.5
+  
 
 # !!!These files are too large to be stored on github and must be manually copied to your directory's data folder!!!
 cropland_raster <- crop(raster(here("data/cropland_NW_2015.tif")), county_extent) # Cropland to use as secondary weights
 
-
+## test
+cropland_raster <- crop(raster(here("data/cropland_NW_2015.tif")), county_extent0) # 
 
 ```
 
@@ -73,79 +80,199 @@ overlay <- overlay_weights(polygons = county, polygon_id_col ="GEOID", secondary
 
 Raster Plot
 ```{r}
-# Transform fine resolution raster into a data frame for plotting
-cropland_df <- as.data.frame(cropland_raster, xy = TRUE) %>% 
-  filter(x >= min(cropland_table$x) - .125 & x <= max(cropland_table$x) + .125,
-         y >= min(cropland_table$y) - .125 & y <= max(cropland_table$y) + .125) # Making the raster fit the grid
+# # Transform fine resolution raster into a data frame for plotting
+# cropland_df <- as.data.frame(cropland_raster, xy = TRUE) %>%
+#   filter(x >= min(cropland_table$x) - .125 & x <= max(cropland_table$x) + .125,
+#          y >= min(cropland_table$y) - .125 & y <= max(cropland_table$y) + .16) # Making the raster fit the grid
 
+## test
+cropland_df <- as.data.frame(cropland_raster, xy = TRUE)
 
-# Plot the Raster
-ggplot(cropland_df) +
-  geom_tile(aes(x,y, fill = cropland_NW_2015)) +             # Raster Data
-  scale_x_continous(expand = c(0,0)) +
-  scale_y_continous(expand = c(0,0)) +
-  scale_fill_gradient(low = "white", high = cropland_fill) + # Setting color scale
-  theme_void() +                                             
+cropland_fig <- ggplot() +
+  geom_tile(data = df_test, aes(x,y, fill = as.factor(cropland_NW_2015))) +
+  geom_tile(data = cropland_table, mapping = aes(x = x, y = y), 
+            alpha = 0, size = 2, color = grid_color)  +
+  labs(caption = "Secondary weights raster") +
+  geom_sf(data = county, alpha = 0) +
+  scale_fill_manual(values = c("0" = "white",
+                              "1" = cropland_fill)) +
+  xlim(c(min(cropland_table$x) - 0.125, max(cropland_table$x) + 0.125)) +
+  ylim(c(min(cropland_table$y) - 0.125, max(cropland_table$y) + 0.125)) +
+  theme_void() +       
   theme(legend.position = "none",
-        plot.background = element_rect(color = "black", size = 1)) +
-  geom_sf(data = county,                 # Adding in a map of all counties for location context
-            alpha = 0) +
-  geom_tile(data = cropland_table, mapping = aes(x = x, y = y),   # Adding grid over the top to contextualize the image
-            alpha = 0, size = 2, color = grid_color)  +      
-  #coord_sf(xlim = c(xmin(county_extent),              # Cropping the image to raster
-   #                 xmax(county_extent)),
-    #       ylim = c(ymin(county_extent), 
-     #               ymax(county_extent))) +
-  theme(plot.background = element_blank())
+        plot.background = element_blank(),
+        plot.caption = element_text(hjust = 0.5, size = 14))
+  
+ggsave(cropland_fig,
+       filename = here("figs/raster_fig.pdf"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+ggsave(cropland_fig,
+       filename = here("figs/raster_fig.png"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+# # Plot the Raster
+# raster_fig <-  ggplot(cropland_df) +
+#   # ggplot(cropland_df %>% filter(x >= min(cropland_table$x - 0.5) &
+#   #                             x <= max(cropland_table$x) + 0.5 &
+#   #                               y >= min(cropland_table$y - 0.5) &
+#   #                               y <= max(cropland_table$y) + 0.5)) +
+#   geom_tile(aes(x,y, fill = cropland_NW_2015)) +             # Raster Data
+#   geom_tile(data = cropland_table, mapping = aes(x = x, y = y),   # Adding grid over the top to contextualize the image
+#             alpha = 0, size = 2, color = grid_color)  + 
+#    geom_sf(data = county, alpha = 0)
+#   # scale_x_continous(expand = c(0,0)) +
+#   # scale_y_continous(expand = c(0,0)) +
+#   scale_fill_gradient(low = "white", high = cropland_fill) + # Setting color scale
+#   theme_void() +                                             
+#   theme(legend.position = "none",
+#         plot.background = element_rect(color = "black", size = 1)) +
+#   geom_sf(data = county,                 # Adding in a map of all counties for location context
+#             alpha = 0) +
+#   #coord_sf(xlim = c(xmin(county_extent),              # Cropping the image to raster
+#    #                 xmax(county_extent)),
+#     #       ylim = c(ymin(county_extent), 
+#      #               ymax(county_extent))) +
+#   theme(plot.background = element_blank())
+# 
+# ggsave(raster_fig,
+#        filename = here("figs/raster_test.pdf"),
+#        width = 5,
+#        height = 5,
+#        units = "in")
+
+
 
 ```
 
 Plot of Resampled Secondary Weights
 ```{r}
-ggplot() +
-    geom_sf(data = county, alpha = 0) +
-  geom_tile(data = cropland_table, mapping = aes(x = x, y = y, alpha = weight*100), fill = cropland_fill, size = 2, color = grid_color) +
-  scale_alpha(range = c(0, .8)) + # Define alpha range aesthetically (alphas corresponding to weights would all look empty)
+resamp_sec_weights_fig <- 
+  ggplot() +
+  # geom_tile(data = cropland_table, mapping = aes(x = x, y = y, alpha = weight*100), fill = cropland_fill, size = 2, color = grid_color) +
+  geom_tile(data = cropland_table, mapping = aes(x = x, y = y, fill = weight * 100), size = 2, color = grid_color) +
+   geom_sf(data = county, alpha = 0) +
+  scale_fill_gradient(low = "white",
+                      high = cropland_fill,
+                      breaks = c(0, 20, 40, 60, 80),
+                      limits = c(min(cropland_table$weight * 100), 80),
+                      guide = guide_colorbar(frame.colour = "black",
+                                             ticks.colour = "black",
+                                             ticks = TRUE)) +
+  # scale_alpha(range = c(0, .8)) + # Define alpha range aesthetically (alphas corresponding to weights would all look empty)
   theme_void() +
-  labs(alpha = "Percentage of Cell Covered 
-by Secondary Weights Raster:") +
+  labs(fill = "Percentage of cell covered by\nsecondary weights raster:") +
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
         plot.margin = margin(b = 10))
+
+ggsave(resamp_sec_weights_fig,
+       filename = here("figs/perc_coverage_sweight.png"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+ggsave(resamp_sec_weights_fig,
+       filename = here("figs/perc_coverage_sweight.pdf"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+
 ```
 
 Sole Polygon and Grid Plot
 ```{r}
-ggplot() +
+admin_region_fig <- 
+  ggplot() +
+  labs(caption = "Administrative region polygon") +
   geom_sf(data = county, fill = w_area_fill, color = "black", alpha = .6) +
   geom_tile(data = cropland_table, mapping = aes(x = x, y = y), alpha = 0, size = 2, color = grid_color) +
-  theme_void()
+  theme_void() +
+  theme(plot.caption = element_text(hjust = 0.5, size = 14))
+
+ggsave(admin_region_fig,
+       filename = here("figs/admin_region_fig.png"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+ggsave(admin_region_fig,
+       filename = here("figs/admin_region_fig.pdf"),
+       width = 5,
+       height = 5,
+       units = "in")
+  
 ```
 
 
 Area Weights Plot
 ```{r}
 # Same idea as previous image
-ggplot() +
-  geom_sf(data = st_shift_longitude(county), fill = polygon_fill) +
-  geom_tile(data = overlay, mapping = aes(x = x, y = y, alpha = 100*w_area), fill = w_area_fill, size = 2, color = grid_color) +
-  scale_alpha_continuous(range = c(0,.5)) +
+weight_area_fig <-
+  ggplot() +
+  geom_tile(data = overlay, mapping = aes(x = x, y = y, fill = w_area * 100), size = 2, color = grid_color) +
+  scale_fill_gradient(low = "white",
+                      high = w_area_fill,
+                      breaks = c(0, 1, 2, 3, 4, 5),
+                      limits = c(0, 5),
+                      guide = guide_colorbar(frame.colour = "black",
+                                             ticks.colour = "black",
+                                             ticks = TRUE)) +
+  geom_sf(data = st_shift_longitude(county), alpha = 0) +
   theme_void() +
-  labs(alpha = "Percentage of Polygon Captured by Cell:") +
+  labs(fill = "Percentage of polygon captured by cell:") +
   theme(legend.position = "bottom",
         legend.direction = "horizontal")
+
+ggsave(weight_area_fig,
+       filename = here("figs/weighted_area_fig.png"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+ggsave(weight_area_fig,
+       filename = here("figs/weighted_area_fig.pdf"),
+       width = 5,
+       height = 5,
+       units = "in")
 ```
 
 Cropland Weights Normalized by Area
 ```{r}
 # Same plot as before but using weight instead of w_area
-ggplot() +
-  geom_sf(data = st_shift_longitude(county), fill = polygon_fill) +
-  geom_tile(data = overlay, mapping = aes(x = x, y = y, alpha = combined_weight), fill = combined_fill, size = 2, color = grid_color) +
-  scale_alpha(range = c(0, .5)) +
+combined_weight_fig <- 
+  ggplot() +
+  geom_tile(data = overlay, mapping = aes(x = x, y = y, fill = combined_weight), size = 2, color = grid_color) +
+  scale_fill_gradient(low = "white",
+                      high = combined_fill,
+                      breaks = c(0, 0.05, 0.10, 0.15, 0.20, 0.25),
+                      limits = c(min(overlay$combined_weight), 0.25),
+                      guide = guide_colorbar(frame.colour = "black",
+                                             ticks.colour = "black",
+                                             ticks = TRUE,
+                                             barwidth = 10)) +
+  geom_sf(data = st_shift_longitude(county), alpha = 0) +
   #geom_label(data = overlay, mapping = aes(x = x, y = y, label = weight)) +
   theme_void() +
-  labs(alpha = "Area Normalized Secondary Weights:") +
+  labs(fill = "Area normalized secondary weights:") +
   theme(legend.position = "bottom")
+
+ggsave(combined_weight_fig,
+       filename = here("figs/combined_weight_fig.png"),
+       width = 5,
+       height = 5,
+       units = "in")
+
+ggsave(combined_weight_fig,
+       filename = here("figs/combined_weight_fig.pdf"),
+       width = 5,
+       height = 5,
+       units = "in")
+
 ```
 
