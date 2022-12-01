@@ -123,18 +123,18 @@ while(i <= length(bins)){
   i = i + 1
 }
 
-bin_formula <- as.formula(paste0("log(mortality) ~ ", bin_string, " + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+bin_formula <- as.formula(paste0("log(mortality) ~ ", bin_string, " + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | poly_id"))
 
 bin_regression <- felm(bin_formula, all_data)
 
 
 poly_string <- "order_1_temp + order_2_temp + order_3_temp + order_4_temp" # Order 5 coefficient not significant, removed and re-ran, order 4 was significant
 
-poly_formula <- as.formula(paste0("log(mortality) ~ ", poly_string, "+ order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+poly_formula <- as.formula(paste0("log(mortality) ~ ", poly_string, "+ order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | poly_id"))
 
 poly_regression <- felm(poly_formula, all_data)
 
-spline_formula <- as.formula(paste0("log(mortality) ~ value + term_1 + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | statefp"))
+spline_formula <- as.formula(paste0("log(mortality) ~ value + term_1 + order_1_prcp + order_2_prcp | as.factor(poly_id):as.factor(month) + as.factor(statefp):as.factor(year) | 0 | poly_id"))
 
 spline_regression <- felm(spline_formula, all_data)
 
@@ -195,21 +195,40 @@ spline_plot_function <- function(x){
 }
 
 
+spline_conf_low_function <- function(x){
+  spline_plot_data$conf.low[1]*x + 
+    spline_plot_data$conf.low[2]*spline_term_calc_function(x) - 
+    spline_plot_data$conf.low[1]*17.5 -
+    spline_plot_data$conf.low[2]*spline_term_calc_function(17.5)
+}
+
+spline_conf_high_function <- function(x){
+  spline_plot_data$conf.high[1]*x + 
+    spline_plot_data$conf.high[2]*spline_term_calc_function(x) - 
+    spline_plot_data$conf.high[1]*17.5 -
+    spline_plot_data$conf.high[2]*spline_term_calc_function(17.5)
+}
+
 ggplot() +
   geom_ribbon(data = bin_plot_data, mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = "darkgrey", fill = "lightgrey") +
-  geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 1) +
-  geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "gold") +
+  geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 1.25, color = "darkgreen") +
+  geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "black", size = 1.25) +
   theme_minimal() +
   scale_x_continuous(breaks = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 17.5, 22.5, 27.5,32.5),
                      expand = c(0,0)) +
-  scale_y_continuous(breaks = c(-.002, 0, .002, .004, .006, .008),
-                     limits = c(-.002, .008)) +
+  scale_y_continuous(breaks = c(-.002, 0, .002, .004, .006),
+                     limits = c(-.001, .005)) +
   labs(x = "Daily average temperature (C)",
        y = "Estimated Impact on Log Mortality") +
   theme(axis.line = element_line(color = "black"),
-        plot.margin = margin(0, 7.5, 0, 0)) +
-  geom_function(fun = poly_plot_function, color = "blue") +
-  geom_function(fun = spline_plot_function, color = "red")
+        plot.margin = margin(0, 7.5, 0, 0),
+        panel.grid = element_blank(),
+        axis.title = element_text(size = 16),
+        axis.text = element_text(size = 12)) +
+  geom_function(fun = poly_plot_function, color = "blue", size = 1.25) +
+  geom_function(fun = spline_plot_function, color = "red", size = 1.25) #+
+  #geom_function(fun = spline_conf_low_function, color = "red") +
+  #geom_function(fun = spline_conf_high_function, color = "red")
 
   
 ```
