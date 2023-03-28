@@ -28,17 +28,18 @@ Define Variables
 ```{r, include = FALSE}
 # Cropping and Placement
 state_abb <- "CA"
-counties_geoid <- c("06107")
+counties_geoid <- c("06107") # The county to use for a small test
 
+# Color Palette
 fill_palette <- "Spectral"
 
 ```
 
 Read in Data
 ```{r}
-# Select counties in CA
+# Select counties in CA from tigris package
 ca_counties <- counties("CA") %>%
-  #filter(GEOID %in% c(counties_geoid)) %>% 
+  #filter(GEOID %in% c(counties_geoid)) %>% # Uncomment for a small test
   st_as_sf()
 
 
@@ -51,13 +52,13 @@ y_max <- ceiling(bbox$ymax * 2) / 2
 y_int <- .5
 
 
-# Raster brick 1 year of temp data !!!This file is to big for the repo, you must have it in your local data folder!!!
-data <- crop(brick(here("data", "era5_temp_2020.nc")), c((360 + (x_min - .5)), 360 + (x_max + .5), (y_min - .5), (y_max + .5)))
+# Raster brick 1 year of temp data !!!This file is to big for the github repo, you must have it in your local data folder!!!
+data <- crop(brick(here("data", "rasters", "era5_temp_2020.nc")), c((360 + (x_min - .5)), 360 + (x_max + .5), (y_min - .5), (y_max + .5)))
 
-data <- data - 250
+data <- data - 250 # Arbitrarily adjust data for more variation in figure but avoid negative values
 ```
 
-Define Rotation Functions (This Code is Not My Own, I don't understand it very well)
+Define Rotation Functions (This Code is from Stefan Junger https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#8)
 ```{r}
 rotate_data <- function(data, x_add = 0, y_add = 0) {
   
@@ -130,9 +131,21 @@ hourly <- hourly +
         legend.position = "none",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
-hourly
+# Save figure
+ggsave(hourly,
+       filename = here("figs/staggregate_fig/hourly_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(hourly,
+       filename = here("figs/staggregate_fig/hourly_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 ```
 
 
@@ -146,7 +159,7 @@ clim_daily <- raster::stackApply(data, indices = indices, fun=mean)
 # Empty Plot
 daily <- ggplot()
 
-# While Loop to Keep Adding Layers to Plot
+# While loop to keep adding rotated layers to the plot
 i <- 180
 while(i <= 185){
   
@@ -181,9 +194,21 @@ daily <- daily +
         legend.position = "none",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
-daily
+# Save plot
+ggsave(daily,
+       filename = here("figs/staggregate_fig/daily_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(daily,
+       filename = here("figs/staggregate_fig/daily_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 ```
 
 
@@ -191,9 +216,9 @@ Create Transformed Raster Brick
 ```{r}
 clim_daily_sq <- clim_daily ^ 2
 
-daily_sq <- ggplot()
+daily_2 <- ggplot()
 
-# While Loop to Keep Adding Layers to Plot
+# Rotate and stack 
 i <- 180
 while(i <= 185){
   
@@ -204,7 +229,7 @@ while(i <= 185){
     rename(value = 1) %>% 
     st_as_sf()
   
-  daily_sq <- daily_sq + 
+  daily_2 <- daily_2 + 
     geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
     geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), color = NA)
   i = i + 1
@@ -217,13 +242,7 @@ while(i <= 185){
 
 Polish Transformed Raster Bricks
 ```{r}
-daily_1 <- daily +
-  theme(plot.caption = element_text(face = "plain")) +
-  # labs(caption = "X") +
-  theme(plot.caption = element_text(size = 12))
-
-
-daily_sq <- daily_sq +
+daily_2 <- daily_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
   # labs(caption = expression("X"^{2}),
        # y = "") +
@@ -235,16 +254,28 @@ daily_sq <- daily_sq +
         legend.position = "none",
         plot.caption = element_text(size = 12, hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
+
+# Save Plot
+ggsave(daily_2,
+       filename = here("figs/staggregate_fig/daily_2_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(daily_2,
+       filename = here("figs/staggregate_fig/daily_2_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 
 
-daily_1
-daily_sq
 ```
 
 Aggregate by Day/Month/Year
 ```{r}
-# Manually generate table of grid cells to turn into polygons (overlay_weights doesn't like using ERA5 grid as polygons)
+# Manually generate table of grid cells to turn into polygons
 x_pos <- ((4.0*(360+ x_min-.5)):(4.0*(360 + x_max+.5) - 1)) / 4.0 # Vector of x positions
 y_pos <- ((4.0*(y_min-.5)):(4.0*(y_max+.5) - 1)) / 4.0 # Vector of y positions
 
@@ -257,6 +288,7 @@ while(i >= 1){
   i = i - 1
 }
 
+# Grid cell sf object to plot gridded values
 grid_polys <- rasterToPolygons(crop(raster(era5_grid), c(360 + x_min - .5, 360 + x_max + .5, y_min - .5, y_max + .5))) %>%
   st_as_sf() %>% 
   mutate(poly_id = as.character(1001:(length(x_all) + 1000))) %>% 
@@ -264,7 +296,7 @@ grid_polys <- rasterToPolygons(crop(raster(era5_grid), c(360 + x_min - .5, 360 +
 
 
 
-
+# Table of weights that all equal 1 to preserve gridded values in staggregate
 overlay_grid <- data.table(data.frame(x = x_all, 
                            y = y_all,
                            poly_id = as.character(1001:(length(x_all) + 1000)),
@@ -273,12 +305,10 @@ overlay_grid <- data.table(data.frame(x = x_all,
 
 
 
-# Get aggregated weights
-agged_grid <- staggregate_polynomial(data = data, overlay_weights = overlay_grid, daily_agg = "average", time_agg = "month", degree = 2)
+# Get aggregated values
+agged_grid <- staggregate_polynomial(data = data, overlay_weights = overlay_grid, daily_agg = "average", time_agg = "day", degree = 2)
 
-# Divide by Number of Days
-agged_grid[, ':=' (order_1 = ifelse(month == 2, order_1 / 29, order_1 / 31),
-                   order_2 = ifelse(month == 2, order_2 / 29, order_2 / 31))]
+
 
 # Run a while loop to separate "X" layers by months and add each to a plot
 monthly_gridded_1 <- ggplot()
@@ -334,7 +364,8 @@ monthly_gridded_1 <- monthly_gridded_1 +
         legend.position = "none",
         plot.caption = element_text(size = 12, face = "plain", hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
 monthly_gridded_2 <- monthly_gridded_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log")  +
@@ -348,13 +379,34 @@ monthly_gridded_2 <- monthly_gridded_2 +
         legend.position = "none",
         plot.caption = element_text(size = 12, hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
 
+# Save plots 
+ggsave(monthly_gridded_1,
+       filename = here("figs/staggregate_fig/monthly_gridded_1_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
 
-monthly_gridded_1
-monthly_gridded_2
+ggsave(monthly_gridded_1,
+       filename = here("figs/staggregate_fig/monthly_gridded_1_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 
+ggsave(monthly_gridded_2,
+       filename = here("figs/staggregate_fig/monthly_gridded_2_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(monthly_gridded_2,
+       filename = here("figs/staggregate_fig/monthly_gridded_2_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 ```
 
 
@@ -364,12 +416,9 @@ Aggregate by Polygon
 # Get overlay weights
 overlay <- overlay_weights(ca_counties, "GEOID")
 
-# Get aggregated weights
-agged_data <- staggregate_polynomial(data = data, overlay_weights = overlay, daily_agg = "average", time_agg = "month", degree = 2)
+# Aggregate the data by polygons
+agged_data <- staggregate_polynomial(data = data, overlay_weights = overlay, daily_agg = "average", time_agg = "day", degree = 2)
 
-# Divide by Number of Days
-agged_data[, ':=' (order_1 = ifelse(month == 2, order_1 / 29, order_1 / 31),
-                   order_2 = ifelse(month == 2, order_2 / 29, order_2 / 31))]
 
 # Run a while loop to separate "X" layers by months and add each to a plot
 monthly_county_1 <- ggplot()
@@ -448,7 +497,8 @@ monthly_county_1 <- monthly_county_1 +
         legend.position = "none",
         plot.caption = element_text(size = 12, face = "plain", hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
 monthly_county_2 <- monthly_county_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
@@ -462,8 +512,31 @@ monthly_county_2 <- monthly_county_2 +
         legend.position = "none",
         plot.caption = element_text(size = 12, hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
-monthly_county_1
-monthly_county_2
+# Save plots 
+ggsave(monthly_county_1,
+       filename = here("figs/staggregate_fig/monthly_county_1_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(monthly_county_1,
+       filename = here("figs/staggregate_fig/monthly_county_1_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(monthly_county_2,
+       filename = here("figs/staggregate_fig/monthly_county_2_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(monthly_county_2,
+       filename = here("figs/staggregate_fig/monthly_county_2_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 ```

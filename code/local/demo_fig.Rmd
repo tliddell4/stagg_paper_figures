@@ -1,5 +1,5 @@
 ---
-title: "Demonstration Figures"
+title: "Demonstration Figure"
 output: html_document
 date: "2022-11-14"
 ---
@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Load Packages
 ```{r}
-library(stagg)
 library(tidyverse)
 library(raster)
 library(sf)
@@ -27,17 +26,17 @@ library(lfe)
 
 Read in Data, Clean, and Merge
 ```{r}
-# Data on deaths
-deaths <- read_dta(here("data/CountyYearMonth_1999_2019.dta")) %>% 
+# Mortality Data supplied by Olivier Deschenes
+deaths <- read_dta(here("data/mortality_and_population/CountyYearMonth_1999_2019.dta")) %>% 
   as.data.table() %>% 
   filter(!is.na(countycode), !is.na(deaths)) %>% # Remove any rows with na in deaths column or in county code
   rename(poly_id = countycode)
 
 # Population data from census estimates
-pop_2000s <- read.csv(here("data/co-est00int-tot.csv")) %>%
+pop_2000s <- read.csv(here("data/mortality_and_population/co-est00int-tot.csv")) %>%
   clean_names()
 
-pop_2010s <- read_xlsx(here("data/co-est2019-annres.xlsx"), skip = 3) %>% 
+pop_2010s <- read_xlsx(here("data/mortality_and_population/co-est2019-annres.xlsx"), skip = 3) %>% 
   clean_names() %>% 
   rename(county_state = 1)
 
@@ -55,7 +54,7 @@ pop_all <- pop_2000s %>%
   pivot_longer(cols = 2:21, names_to = "year", values_to = "population") %>% 
   mutate(year = as.numeric(substr(year, start = 2, stop = 5)))
 
-# Counties and their states (use to correctly identify each county's state)
+# Counties and their states (use to correctly identify each county's state) from tigirs package
 county_states = counties()
 
 county_states <- county_states %>% 
@@ -64,33 +63,35 @@ county_states <- county_states %>%
   mutate(poly_id = as.numeric(geoid)) %>%  # Assuming same county fps system in tigris counties and health data
   dplyr::select(statefp, poly_id)
 
-# Binned temperature
-temp_bin <- rbind(fread(here("data/temp_binned_2000_2004_US_counties_ERA5_pop_weights.csv")),
-                  fread(here("data/temp_binned_2005_2009_US_counties_ERA5_pop_weights.csv")),                                              fread(here("data/temp_binned_2010_2014_US_counties_ERA5_pop_weights.csv")),
-                  fread(here("data/temp_binned_2015_2019_US_counties_ERA5_pop_weights.csv")))
+# Binned temperature results from running stagg_paper_figures/code/cluster/r_scripts/temp_bins.R remotely
+temp_bin <- rbind(
+  fread(here("data/stagg_output/temperature/binned/temp_binned_2000_2004_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/binned/temp_binned_2005_2009_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/binned/temp_binned_2010_2014_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/binned/temp_binned_2015_2019_US_counties_ERA5_pop_weights.csv")))
 
-# Polynomial Temperature
+# Polynomial Temperature from running stagg_paper_figures/code/cluster/r_scripts/temp_poly.R remotely
 temp_poly <- rbind(
-  fread(here("data/temp_polynomial_2000_2004_US_counties_ERA5_pop_weights.csv")),
-  fread(here("data/temp_polynomial_2005_2009_US_counties_ERA5_pop_weights.csv")),
-  fread(here("data/temp_polynomial_2010_2014_US_counties_ERA5_pop_weights.csv")),
-  fread(here("data/temp_polynomial_2015_2019_US_counties_ERA5_pop_weights.csv"))) %>% 
+  fread(here("data/stagg_output/temperature/polynomial/temp_polynomial_2000_2004_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/polynomial/temp_polynomial_2005_2009_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/polynomial/temp_polynomial_2010_2014_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/polynomial/temp_polynomial_2015_2019_US_counties_ERA5_pop_weights.csv"))) %>% 
   rename(order_1_temp = order_1, order_2_temp = order_2, order_3_temp = order_3,
          order_4_temp = order_4, order_5_temp = order_5) # To distinguish from prcp
 
-# Spline Temperature
+# Spline Temperature from running stagg_paper_figures/code/cluster/r_scripts/temp_spline.R remotely
 temp_spline <- rbind(
-  fread(here("data/temp_spline_2000_2004_US_counties_ERA5_pop_weights.csv")),
-  fread(here("data/temp_spline_2005_2009_US_counties_ERA5_pop_weights.csv")),
-  fread(here("data/temp_spline_2010_2014_US_counties_ERA5_pop_weights.csv")),
-  fread(here("data/temp_spline_2015_2019_US_counties_ERA5_pop_weights.csv")))
+  fread(here("data/stagg_output/temperature/spline/temp_spline_2000_2004_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/spline/temp_spline_2005_2009_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/spline/temp_spline_2010_2014_US_counties_ERA5_pop_weights.csv")),
+  fread(here("data/stagg_output/temperature/spline/temp_spline_2015_2019_US_counties_ERA5_pop_weights.csv")))
 
 # Quadratic Precipitation
 prcp_poly <- rbind(
-  fread(here("data/prcp-polynomial-2000-2004-US-counties-prcp-era5-pop_weights.csv")),
-  fread(here("data/prcp-polynomial-2005-2009-US-counties-prcp-era5-pop_weights.csv")),
-  fread(here("data/prcp-polynomial-2010-2014-US-counties-prcp-era5-pop_weights.csv")),
-  fread(here("data/prcp-polynomial-2015-2019-US-counties-prcp-era5-pop_weights.csv"))) %>% 
+  fread(here("data/stagg_output/precipitation/prcp-polynomial-2000-2004-US-counties-prcp-era5-pop_weights.csv")),
+  fread(here("data/stagg_output/precipitation/prcp-polynomial-2005-2009-US-counties-prcp-era5-pop_weights.csv")),
+  fread(here("data/stagg_output/precipitation/prcp-polynomial-2010-2014-US-counties-prcp-era5-pop_weights.csv")),
+  fread(here("data/stagg_output/precipitation/prcp-polynomial-2015-2019-US-counties-prcp-era5-pop_weights.csv"))) %>% 
   rename(order_1_prcp = order_1,
          order_2_prcp = order_2) # to distinguish between temp polynomial and prcp polynomial
 
@@ -112,6 +113,7 @@ bins <- c("bin_ninf_to_n10", "bin_n10_to_n5", "bin_n5_to_0", "bin_0_to_5", "bin_
 
 bin_string <- ""
 i <- 1
+# Loop to generate bin vector formula
 while(i <= length(bins)){
   if(i != length(bins)){
     bin_string <- paste0(bin_string, bins[i], " + ")
@@ -147,14 +149,14 @@ Plot Regression Results
 # Turn regression into a data frame to extract coefficients and plot
 bin_plot_data <- tidy(bin_regression, conf.int = TRUE)
 
-bin_plot_data <- bin_plot_data %>% 
+bin_plot_data <- bin_plot_data %>% # Prepare to graph bin coefficients 
   filter(term %in% bins) %>% 
-  add_row(term = "bin_15_to_20", estimate = 0, conf.low = 0, conf.high = 0) %>% 
-  mutate(graph_index = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 22.5, 27.5,32.5, 17.5))
+  add_row(term = "bin_15_to_20", estimate = 0, conf.low = 0, conf.high = 0) %>% # Add reference bin
+  mutate(graph_index = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 22.5, 27.5,32.5, 17.5)) #
 
 poly_plot_data <- tidy(poly_regression, conf.int = TRUE)
 
-poly_plot_function <- function(x){
+poly_plot_function <- function(x){ # Prepare to graph equation estimated by polynomial regression
   poly_plot_data$estimate[4]*(x)^4 + 
   poly_plot_data$estimate[3]*x^3 +
   poly_plot_data$estimate[2]*x^2 +
@@ -168,7 +170,7 @@ spline_plot_data <- tidy(spline_regression, conf.int = TRUE)
 
 spline_knot_locs <- c(-2.5, 17.5, 27.5)
 
-spline_term_calc_function <- function(x){  
+spline_term_calc_function <- function(x){ # Function used to calculate new spline variable
   part1 <- ifelse((x - spline_knot_locs[1]) > 0,
                    (x - spline_knot_locs[1])^3, 0)
 
@@ -185,7 +187,7 @@ spline_term_calc_function <- function(x){
   
 }
 
-spline_plot_function <- function(x){
+spline_plot_function <- function(x){ # Prepare to graph equation estimated by spline regression
   
     spline_plot_data$estimate[1]*x + 
     spline_plot_data$estimate[2]*spline_term_calc_function(x) - 
@@ -194,43 +196,60 @@ spline_plot_function <- function(x){
   
 }
 
+# # Prepare to plot spline confidence intervals, not shown in figure
+# spline_conf_low_function <- function(x){ 
+#   spline_plot_data$conf.low[1]*x + 
+#     spline_plot_data$conf.low[2]*spline_term_calc_function(x) - 
+#     spline_plot_data$conf.low[1]*17.5 -
+#     spline_plot_data$conf.low[2]*spline_term_calc_function(17.5)
+# }
+# 
+# spline_conf_high_function <- function(x){
+#   spline_plot_data$conf.high[1]*x + 
+#     spline_plot_data$conf.high[2]*spline_term_calc_function(x) - 
+#     spline_plot_data$conf.high[1]*17.5 -
+#     spline_plot_data$conf.high[2]*spline_term_calc_function(17.5)
+# }
 
-spline_conf_low_function <- function(x){
-  spline_plot_data$conf.low[1]*x + 
-    spline_plot_data$conf.low[2]*spline_term_calc_function(x) - 
-    spline_plot_data$conf.low[1]*17.5 -
-    spline_plot_data$conf.low[2]*spline_term_calc_function(17.5)
-}
-
-spline_conf_high_function <- function(x){
-  spline_plot_data$conf.high[1]*x + 
-    spline_plot_data$conf.high[2]*spline_term_calc_function(x) - 
-    spline_plot_data$conf.high[1]*17.5 -
-    spline_plot_data$conf.high[2]*spline_term_calc_function(17.5)
-}
-
-ggplot() +
-  geom_ribbon(data = bin_plot_data, mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = "darkgrey", fill = "lightgrey") +
+plot <- ggplot() +
+  geom_ribbon(data = bin_plot_data, mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = NA, fill = "darkgreen", alpha = .2) +
   geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 1.25, color = "darkgreen") +
-  geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "black", size = 1.25) +
+  geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "darkgreen", size = 2) +
   theme_minimal() +
-  scale_x_continuous(breaks = c(-12.5,-7.5, -2.5, 2.5, 7.5, 12.5, 17.5, 22.5, 27.5,32.5),
-                     expand = c(0,0)) +
+  scale_x_continuous(breaks = -2:6*5,
+                     expand = c(0,0),
+                     limits = c(-12.5, 32.5)) +
   scale_y_continuous(breaks = c(-.002, 0, .002, .004, .006),
                      limits = c(-.001, .005)) +
-  labs(x = "Daily average temperature (C)",
-       y = "Estimated Impact on Log Mortality") +
+  labs(x = "Daily Average Temperature (C)",
+       y = "Estimated Impact\non Log Mortality") +
   theme(axis.line = element_line(color = "black"),
-        plot.margin = margin(0, 7.5, 0, 0),
+        plot.margin = margin(0, 0, 0, 5),
         panel.grid = element_blank(),
-        axis.title = element_text(size = 16),
-        axis.text = element_text(size = 12)) +
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 16)) +
   geom_function(fun = poly_plot_function, color = "blue", size = 1.25) +
   geom_function(fun = spline_plot_function, color = "red", size = 1.25) #+
   #geom_function(fun = spline_conf_low_function, color = "red") +
   #geom_function(fun = spline_conf_high_function, color = "red")
 
-  
 ```
 
+
+Save Plot
+```{r}
+ggsave(plot,
+       filename = here("figs/demo_fig/reg_plot.png"),
+       width = 7,
+       height = 5,
+       units = "in",
+       bg = "white")
+
+ggsave(plot,
+       filename = here("figs/demo_fig/reg_plot.pdf"),
+       width = 7,
+       height = 5,
+       units = "in",
+       bg = "white")
+```
 

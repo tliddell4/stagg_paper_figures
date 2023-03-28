@@ -22,32 +22,36 @@ library(readxl)
 
 Define Variables
 ```{r}
-y_int <- .5
+# How much to space out layers
+y_int <- .5 
+
+# Color Palette
+fill_palette <- "Spectral"
 ```
 
 Read in Data
 ```{r}
 
-# County polygons
+# County polygons from tigris package
 counties <- counties() %>%
   mutate(poly_id = as.numeric(GEOID)) %>% 
   filter(poly_id < 60000) %>%
-  filter(!poly_id %in% 2000:2999, !poly_id %in% 15000:15999)
+  filter(!poly_id %in% 2000:2999, !poly_id %in% 15000:15999) %>% 
   st_as_sf()
 
-# Deaths Data
-deaths_data <- read_dta(here("data/CountyYearMonth_1999_2019.dta")) %>% 
+# Deaths Data from Olivier Deschenes 
+deaths_data <- read_dta(here("data/mortality_and_population/CountyYearMonth_1999_2019.dta")) %>% 
   filter(year == 2019, month %in% c(6, 7, 8)) %>% 
   rename(poly_id = countycode)
 
 
-# We need pop data from 2000 to link county_state to GEOID
-pop_2000s <- read.csv(here("data/co-est00int-tot.csv")) %>%
+# Population Data from 2000 to 2010 from census estimates
+pop_2000s <- read.csv(here("data/mortality_and_population/co-est00int-tot.csv")) %>%
   clean_names() %>% 
   mutate(county_state = paste0(".", ctyname, ", ", stname))
 
-# Population Data for 2019
-pop_data <- read_xlsx(here("data/co-est2019-annres.xlsx"), skip = 3) %>% 
+# Population Data from 2011 to 2019 from census estimates 
+pop_data <- read_xlsx(here("data/mortality_and_population/co-est2019-annres.xlsx"), skip = 3) %>% 
   clean_names() %>% 
   rename(county_state = 1) %>% 
   dplyr::select(county_state, x2019) %>% 
@@ -62,14 +66,14 @@ mortality_data <- right_join(deaths_data,  pop_data, by = "poly_id") %>%
   inner_join(counties, by = "poly_id") %>% 
   st_as_sf()
 
-# Raster brick 1 year of temp data !!!This file is to big for the repo, you must have it in your local data folder!!!
-data <- crop(brick(here("data", "era5_temp_2020.nc")), extent(st_shift_longitude(counties)))
+# Raster brick 1 year of temp data !!!This file is to big for the github repo, you must have it in your local data folder!!!
+data <- crop(brick(here("data", "rasters", "era5_temp_2020.nc")), extent(st_shift_longitude(counties)))
 data <- data - 273.15
 
 ```
 
 
-Define Rotation Functions (This Code is Not My Own, I don't understand it very well)
+Define Rotation Functions (This Code is from Stefan Junger https://stefanjuenger.github.io/gesis-workshop-geospatial-techniques-R/slides/2_4_Advanced_Maps_II/2_4_Advanced_Maps_II.html#8)
 ```{r}
 rotate_data <- function(data, x_add = 0, y_add = 0) {
   
@@ -108,7 +112,7 @@ Create Hourly Raster Brick
 hourly <- ggplot()
 
 # While Loop to Keep Adding Layers to Plot
-i <- 4331 # Choosing to start at layer 10 because it looks a bit like the daily aggregation
+i <- 4331 
 while(i <= 4340){
   
   # Read layer from data
@@ -130,7 +134,7 @@ while(i <= 4340){
 
 Polish Hourly Raster Brick
 ```{r}
-hourly1 <- hourly +
+hourly <- hourly +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
   # labs(y = "\U2190 Hours \U2192",
        # caption = "Hourly Gridded Data") +
@@ -142,9 +146,21 @@ hourly1 <- hourly +
         legend.position = "none",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
 
-hourly1
+
+ggsave(hourly,
+       filename = here("figs/intro_fig/temperature_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(hourly,
+       filename = here("figs/intro_fig/temperature_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 ```
 
 Create stack of monthly mortality data
@@ -190,9 +206,20 @@ mortality_plot <- mortality_plot +
         legend.position = "none",
         plot.caption = element_text(size = 12, face = "plain", hjust = .5),
         plot.background = element_blank(),
-        panel.background = element_blank()) +
+        panel.background = element_blank(),
+        panel.grid.major = element_blank()) +
   labs(fill = "Deaths Per 1000 Individuals")
 
-mortality_plot
+ggsave(mortality_plot,
+       filename = here("figs/intro_fig/mortality_stack.png"),
+       width = 7,
+       height = 5,
+       units = "in")
+
+ggsave(mortality_plot,
+       filename = here("figs/intro_fig/mortality_stack.pdf"),
+       width = 7,
+       height = 5,
+       units = "in")
 ```
 

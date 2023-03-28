@@ -27,7 +27,6 @@ Define Variables
 # Location selection
 state_abb <- "CA"
 county_geoid <- "06107"
-
 # Color Scheme
 polygon_fill <- "white"
 cropland_fill <- "gold"
@@ -41,16 +40,12 @@ Read in Data
 ```{r}
 # Polygons for whole state
 state_counties <- counties(state_abb)
-
-
 # Polygon only of one county
 county <- state_counties %>%  # We are using one county from the tigris package
   filter(GEOID == county_geoid) %>% 
   st_as_sf() 
-
 # Get the extent of the county with buffer
 # county_extent <- extent(extent(county) + 0.25)
-
 ## testing to try to get fig 2a right
 county_extent0 <- extent(county)
 county_extent0@xmin <- county_extent0@xmin - 0.5
@@ -58,13 +53,10 @@ county_extent0@xmax <- county_extent0@xmax + 0.5
 county_extent0@ymin <- county_extent0@ymin - 0.5
 county_extent0@ymax <- county_extent0@ymax + 0.5
   
-
 # !!!These files are too large to be stored on github and must be manually copied to your directory's data folder!!!
 cropland_raster <- crop(raster(here("data/cropland_NW_2015.tif")), county_extent) # Cropland to use as secondary weights
-
 ## test
 cropland_raster <- crop(raster(here("data/cropland_NW_2015.tif")), county_extent0) # 
-
 ```
 
 
@@ -72,7 +64,6 @@ Run Stagg
 ```{r}
 # Generate a table of era5 scale cropland weights
 cropland_table <- secondary_weights(secondary_raster = cropland_raster, extent = county_extent) 
-
 # Generate a table of overlay weights
 overlay <- overlay_weights(polygons = county, polygon_id_col ="GEOID", secondary_weights = cropland_table) %>% 
   rename(combined_weight = weight)
@@ -84,10 +75,8 @@ Raster Plot
 # cropland_df <- as.data.frame(cropland_raster, xy = TRUE) %>%
 #   filter(x >= min(cropland_table$x) - .125 & x <= max(cropland_table$x) + .125,
 #          y >= min(cropland_table$y) - .125 & y <= max(cropland_table$y) + .16) # Making the raster fit the grid
-
 ## test
 cropland_df <- as.data.frame(cropland_raster, xy = TRUE)
-
 cropland_fig <- ggplot() +
   geom_tile(data = df_test, aes(x,y, fill = as.factor(cropland_NW_2015))) +
   geom_tile(data = cropland_table, mapping = aes(x = x, y = y), 
@@ -108,13 +97,11 @@ ggsave(cropland_fig,
        width = 5,
        height = 5,
        units = "in")
-
 ggsave(cropland_fig,
        filename = here("figs/raster_fig.png"),
        width = 5,
        height = 5,
        units = "in")
-
 # # Plot the Raster
 # raster_fig <-  ggplot(cropland_df) +
 #   # ggplot(cropland_df %>% filter(x >= min(cropland_table$x - 0.5) &
@@ -144,9 +131,6 @@ ggsave(cropland_fig,
 #        width = 5,
 #        height = 5,
 #        units = "in")
-
-
-
 ```
 
 Plot of Resampled Secondary Weights
@@ -169,20 +153,16 @@ resamp_sec_weights_fig <-
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
         plot.margin = margin(b = 10))
-
 ggsave(resamp_sec_weights_fig,
        filename = here("figs/perc_coverage_sweight.png"),
        width = 5,
        height = 5,
        units = "in")
-
 ggsave(resamp_sec_weights_fig,
        filename = here("figs/perc_coverage_sweight.pdf"),
        width = 5,
        height = 5,
        units = "in")
-
-
 ```
 
 Sole Polygon and Grid Plot
@@ -194,13 +174,11 @@ admin_region_fig <-
   geom_tile(data = cropland_table, mapping = aes(x = x, y = y), alpha = 0, size = 2, color = grid_color) +
   theme_void() +
   theme(plot.caption = element_text(hjust = 0.5, size = 14))
-
 ggsave(admin_region_fig,
        filename = here("figs/admin_region_fig.png"),
        width = 5,
        height = 5,
        units = "in")
-
 ggsave(admin_region_fig,
        filename = here("figs/admin_region_fig.pdf"),
        width = 5,
@@ -228,13 +206,11 @@ weight_area_fig <-
   labs(fill = "Percentage of polygon captured by cell:") +
   theme(legend.position = "bottom",
         legend.direction = "horizontal")
-
 ggsave(weight_area_fig,
        filename = here("figs/weighted_area_fig.png"),
        width = 5,
        height = 5,
        units = "in")
-
 ggsave(weight_area_fig,
        filename = here("figs/weighted_area_fig.pdf"),
        width = 5,
@@ -261,18 +237,15 @@ combined_weight_fig <-
   theme_void() +
   labs(fill = "Area normalized secondary weights:") +
   theme(legend.position = "bottom")
-
 ggsave(combined_weight_fig,
        filename = here("figs/combined_weight_fig.png"),
        width = 5,
        height = 5,
        units = "in")
-
 ggsave(combined_weight_fig,
        filename = here("figs/combined_weight_fig.pdf"),
        width = 5,
        height = 5,
        units = "in")
-
 ```
 
