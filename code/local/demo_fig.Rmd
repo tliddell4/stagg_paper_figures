@@ -213,7 +213,7 @@ spline_plot_function <- function(x){ # Prepare to graph equation estimated by sp
 
 plot <- ggplot() +
   geom_ribbon(data = bin_plot_data, mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = NA, fill = "darkgreen", alpha = .2) +
-  geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 1.25, color = "darkgreen") +
+  geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 2, color = "darkgreen") +
   geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "darkgreen", size = 2) +
   theme_minimal() +
   scale_x_continuous(breaks = -2:6*5,
@@ -223,13 +223,13 @@ plot <- ggplot() +
                      limits = c(-.001, .005)) +
   labs(x = "Daily Average Temperature (C)",
        y = "Estimated Impact\non Log Mortality") +
-  theme(axis.line = element_line(color = "black"),
+  theme(axis.line = element_line(color = "black", size = 2),
         plot.margin = margin(0, 0, 0, 5),
         panel.grid = element_blank(),
         axis.title = element_text(size = 20),
         axis.text = element_text(size = 16)) +
-  geom_function(fun = poly_plot_function, color = "blue", size = 1.25) +
-  geom_function(fun = spline_plot_function, color = "red", size = 1.25) #+
+  geom_function(fun = poly_plot_function, color = "blue", size = 2) 
+  #geom_function(fun = spline_plot_function, color = "red", size = 1.25) #+
   #geom_function(fun = spline_conf_low_function, color = "red") +
   #geom_function(fun = spline_conf_high_function, color = "red")
 
