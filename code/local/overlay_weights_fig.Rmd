@@ -92,12 +92,14 @@ cropland_fig <- ggplot() +
         plot.caption = element_text(hjust = 0.5, size = 14))
   
 ggsave(cropland_fig,
-       filename = here("figs/overlay_weights_fig/raster_fig.pdf"),
+       # filename = here("figs/overlay_weights_fig/raster_fig.pdf"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/raster_fig.pdf"),
        width = 5,
        height = 5,
        units = "in")
 ggsave(cropland_fig,
-       filename = here("figs/overlay_weights_fig/raster_fig.png"),
+       # filename = here("figs/overlay_weights_fig/raster_fig.png"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/raster_fig.png"),
        width = 5,
        height = 5,
        units = "in")
@@ -122,12 +124,14 @@ resamp_sec_weights_fig <- ggplot() +
         plot.margin = margin(b = 10))
 
 ggsave(resamp_sec_weights_fig,
-       filename = here("figs/overlay_weights_fig/perc_coverage_sweight.png"),
+       # filename = here("figs/overlay_weights_fig/perc_coverage_sweight.png"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/perc_coverage_sweight.png"),
        width = 5,
        height = 5,
        units = "in")
 ggsave(resamp_sec_weights_fig,
-       filename = here("figs/overlay_weights_fig/perc_coverage_sweight.pdf"),
+       # filename = here("figs/overlay_weights_fig/perc_coverage_sweight.pdf"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/perc_coverage_sweight.pdf"),
        width = 5,
        height = 5,
        units = "in")
@@ -142,13 +146,16 @@ admin_region_fig <-
   geom_tile(data = cropland_table, mapping = aes(x = x, y = y), alpha = 0, size = 2, color = grid_color) +
   theme_void() +
   theme(plot.caption = element_text(hjust = 0.5, size = 14))
+
 ggsave(admin_region_fig,
-       filename = here("figs/overlay_weights_fig/admin_region_fig.png"),
+       # filename = here("figs/overlay_weights_fig/admin_region_fig.png"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/admin_region_fig.png"),
        width = 5,
        height = 5,
        units = "in")
 ggsave(admin_region_fig,
-       filename = here("figs/overlay_weights_fig/admin_region_fig.pdf"),
+       # filename = here("figs/overlay_weights_fig/admin_region_fig.pdf"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/admin_region_fig.pdf"),
        width = 5,
        height = 5,
        units = "in")
@@ -174,13 +181,16 @@ weight_area_fig <-
   labs(fill = "Percentage of polygon captured by cell:") +
   theme(legend.position = "bottom",
         legend.direction = "horizontal")
+
 ggsave(weight_area_fig,
-       filename = here("figs/overlay_weights_fig/weighted_area_fig.png"),
+       # filename = here("figs/overlay_weights_fig/weighted_area_fig.png"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/weighted_area_fig.png"),
        width = 5,
        height = 5,
        units = "in")
 ggsave(weight_area_fig,
-       filename = here("figs/overlay_weights_fig/weighted_area_fig.pdf"),
+       # filename = here("figs/overlay_weights_fig/weighted_area_fig.pdf"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/weighted_area_fig.pdf"),
        width = 5,
        height = 5,
        units = "in")
@@ -205,13 +215,16 @@ combined_weight_fig <-
   theme_void() +
   labs(fill = "Area normalized secondary weights:") +
   theme(legend.position = "bottom")
+
 ggsave(combined_weight_fig,
-       filename = here("figs/overlay_weights_fig/combined_weight_fig.png"),
+       # filename = here("figs/overlay_weights_fig/combined_weight_fig.png"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/combined_weight_fig.png"),
        width = 5,
        height = 5,
        units = "in")
 ggsave(combined_weight_fig,
-       filename = here("figs/overlay_weights_fig/combined_weight_fig.pdf"),
+       # filename = here("figs/overlay_weights_fig/combined_weight_fig.pdf"),
+       filename = here("figs/reproduce-test/overlay_weights_fig/combined_weight_fig.pdf"),
        width = 5,
        height = 5,
        units = "in")
