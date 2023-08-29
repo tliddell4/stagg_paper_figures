@@ -139,13 +139,15 @@ ggsave(hourly,
        filename = here("figs/staggregate_fig/hourly_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(hourly,
        filename = here("figs/staggregate_fig/hourly_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ```
 
 
@@ -202,13 +204,15 @@ ggsave(daily,
        filename = here("figs/staggregate_fig/daily_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(daily,
        filename = here("figs/staggregate_fig/daily_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ```
 
 
@@ -262,13 +266,15 @@ ggsave(daily_2,
        filename = here("figs/staggregate_fig/daily_2_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(daily_2,
        filename = here("figs/staggregate_fig/daily_2_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 
 ```
@@ -388,25 +394,29 @@ ggsave(monthly_gridded_1,
        filename = here("figs/staggregate_fig/monthly_gridded_1_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(monthly_gridded_1,
        filename = here("figs/staggregate_fig/monthly_gridded_1_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(monthly_gridded_2,
        filename = here("figs/staggregate_fig/monthly_gridded_2_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(monthly_gridded_2,
        filename = here("figs/staggregate_fig/monthly_gridded_2_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ```
 
 
@@ -520,23 +530,27 @@ ggsave(monthly_county_1,
        filename = here("figs/staggregate_fig/monthly_county_1_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(monthly_county_1,
        filename = here("figs/staggregate_fig/monthly_county_1_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(monthly_county_2,
        filename = here("figs/staggregate_fig/monthly_county_2_stack.png"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 
 ggsave(monthly_county_2,
        filename = here("figs/staggregate_fig/monthly_county_2_stack.pdf"),
        width = 7,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ```
