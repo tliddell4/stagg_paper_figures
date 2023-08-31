@@ -33,6 +33,9 @@ cropland_fill <- "gold"
 grid_color <- "grey"
 w_area_fill <- "#61B1FF"
 combined_fill <- "#7fb17f"
+
+axis_text_size <- 12
+
 ```
 
 
@@ -69,6 +72,8 @@ cropland_table <- secondary_weights(secondary_raster = cropland_raster, extent =
 # Generate a table of overlay weights
 overlay <- overlay_weights(polygons = county, polygon_id_col ="GEOID", secondary_weights = cropland_table) %>% 
   rename(combined_weight = weight)
+
+overlay_extent <- extent(overlay)
 ```
 
 Raster Plot
@@ -76,64 +81,89 @@ Raster Plot
 # Transform fine resolution raster into a data frame for plotting
 cropland_df <- as.data.frame(cropland_raster, xy = TRUE)
 
+cropland_df_crop <- cropland_df %>%
+  filter(x >= -119.63 & x <= -117.9) %>%
+  filter(y >= 35.63 & y <= 36.88)
+
+cropland_table_crop <- cropland_table %>%
+  filter(x >= -119.5 & x <= -118) %>%
+  filter(y >= 35.75 & y <= 36.75)
+
 cropland_fig <- ggplot() +
-  geom_tile(data = cropland_df, aes(x,y, fill = as.factor(cropland_NW_2015))) +
-  geom_tile(data = cropland_table, mapping = aes(x = x, y = y), 
+  # geom_tile(data = cropland_df, aes(x,y, fill = as.factor(cropland_NW_2015))) +
+   geom_tile(data = cropland_df_crop, aes(x,y, fill = as.factor(cropland_NW_2015))) +
+  geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y), 
             alpha = 0, size = 2, color = grid_color)  +
-  labs(caption = "Secondary weights raster") +
+  labs(caption = "Cropland raster") +
   geom_sf(data = county, alpha = 0) +
   scale_fill_manual(values = c("0" = "white",
                               "1" = cropland_fill)) +
-  xlim(c(min(cropland_table$x) - 0.125, max(cropland_table$x) + 0.125)) +
-  ylim(c(min(cropland_table$y) - 0.125, max(cropland_table$y) + 0.125)) +
+  # xlim(c(-120, -118.5)) +
+  # ylim(c(35, 37)) +
+  # ylim(c(overlay_extent@ymin - 0.125, overlay_extent@ymax + 0.125)) +
+  # xlim(c(min(cropland_table$x) - 0.125, max(cropland_table$x) + 0.125)) +
+  # ylim(c(min(cropland_table$y) - 0.125, max(cropland_table$y) + 0.125)) +
   theme_void() +       
   theme(legend.position = "none",
         plot.background = element_blank(),
-        plot.caption = element_text(hjust = 0.5, size = 14))
+        plot.caption = element_text(hjust = 0.5, size = axis_text_size),
+        plot.margin = margin(b = 10))
   
 ggsave(cropland_fig,
        # filename = here("figs/overlay_weights_fig/raster_fig.pdf"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/raster_fig.pdf"),
-       width = 5,
-       height = 5,
-       units = "in")
+       filename = here("figs/overlay-weights-fig/raster_fig.pdf"),
+       width = 3,
+       height = 3,
+       units = "in",
+       dpi = 300)
+
 ggsave(cropland_fig,
        # filename = here("figs/overlay_weights_fig/raster_fig.png"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/raster_fig.png"),
-       width = 5,
-       height = 5,
-       units = "in")
+       filename = here("figs/overlay-weights-fig/raster_fig.png"),
+       width = 3,
+       height = 3,
+       units = "in",
+       dpi = 300)
 ```
 
 Plot of Resampled Secondary Weights
 ```{r}
 resamp_sec_weights_fig <- ggplot() +
-  geom_tile(data = cropland_table, mapping = aes(x = x, y = y, fill = weight * 100), size = 2, color = grid_color) +
+  geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y, fill = weight), size = 2, color = grid_color) +
    geom_sf(data = county, alpha = 0) +
   scale_fill_gradient(low = "white",
                       high = cropland_fill,
-                      breaks = c(0, 20, 40, 60, 80),
-                      limits = c(min(cropland_table$weight * 100), 80),
+                      breaks = c(0, 0.2, 0.4, 0.60, 0.8),
+                      limits = c(min(cropland_table$weight ), 0.8),
                       guide = guide_colorbar(frame.colour = "black",
                                              ticks.colour = "black",
                                              ticks = TRUE)) +
   theme_void() +
-  labs(fill = "Percentage of cell covered by\nsecondary weights raster:") +
+  labs(fill = "Resampled crop weights",
+       x = NULL,
+       y = NULL) +
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
-        plot.margin = margin(b = 10))
+        axis.title = element_text(size = axis_text_size),
+        legend.title = element_text(size = axis_text_size),
+        legend.key.width = unit(1, "cm"),
+        legend.title.align = 0.5,
+        plot.margin = margin(b = 10)) +
+  guides(fill = guide_colourbar(title.position = "bottom",
+                                frame.colour = "darkgray", ticks.colour = "black"))
 
 ggsave(resamp_sec_weights_fig,
        # filename = here("figs/overlay_weights_fig/perc_coverage_sweight.png"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/perc_coverage_sweight.png"),
+       filename = here("figs/overlay-weights-fig/perc_coverage_sweight.png"),
        width = 5,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ggsave(resamp_sec_weights_fig,
        # filename = here("figs/overlay_weights_fig/perc_coverage_sweight.pdf"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/perc_coverage_sweight.pdf"),
-       width = 5,
-       height = 5,
+       filename = here("figs/overlay-weights-fig/perc_coverage_sweight.pdf"),
+       width = 3,
+       height = 3,
        units = "in")
 ```
 
@@ -141,24 +171,28 @@ Sole Polygon and Grid Plot
 ```{r}
 admin_region_fig <- 
   ggplot() +
-  labs(caption = "Administrative region polygon") +
+  labs(caption = "County polygon") +
   geom_sf(data = county, fill = w_area_fill, color = "black", alpha = .6) +
-  geom_tile(data = cropland_table, mapping = aes(x = x, y = y), alpha = 0, size = 2, color = grid_color) +
+  geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y), alpha = 0, size = 2, color = grid_color) +
   theme_void() +
-  theme(plot.caption = element_text(hjust = 0.5, size = 14))
+  theme(plot.caption = element_text(hjust = 0.5, size = axis_text_size),
+        plot.margin = margin(b = 10))
 
 ggsave(admin_region_fig,
        # filename = here("figs/overlay_weights_fig/admin_region_fig.png"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/admin_region_fig.png"),
-       width = 5,
-       height = 5,
-       units = "in")
+       filename = here("figs/overlay-weights-fig/admin_region_fig.png"),
+       width = 3,
+       height = 3,
+       units = "in",
+       dpi = 300)
+
 ggsave(admin_region_fig,
        # filename = here("figs/overlay_weights_fig/admin_region_fig.pdf"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/admin_region_fig.pdf"),
-       width = 5,
-       height = 5,
-       units = "in")
+       filename = here("figs/overlay-weights-fig/admin_region_fig.pdf"),
+       width = 3,
+       height = 3,
+       units = "in",
+       dpi = 300)
   
 ```
 
@@ -168,32 +202,43 @@ Area Weights Plot
 # Same idea as previous image
 weight_area_fig <-
   ggplot() +
-  geom_tile(data = overlay, mapping = aes(x = x, y = y, fill = w_area * 100), size = 2, color = grid_color) +
+  geom_tile(data = overlay, mapping = aes(x = x, y = y, fill = w_area), size = 2, color = grid_color) +
   scale_fill_gradient(low = "white",
                       high = w_area_fill,
-                      breaks = c(0, 1, 2, 3, 4, 5),
-                      limits = c(0, 5),
+                      breaks = c(0, 0.025, 0.05),
+                      limits = c(0, 0.05),
                       guide = guide_colorbar(frame.colour = "black",
                                              ticks.colour = "black",
                                              ticks = TRUE)) +
   geom_sf(data = st_shift_longitude(county), alpha = 0) +
   theme_void() +
-  labs(fill = "Percentage of polygon captured by cell:") +
+  labs(fill = "Fraction of total county \narea captured by cell",
+       x = NULL,
+       y = NULL) +
   theme(legend.position = "bottom",
-        legend.direction = "horizontal")
+        legend.direction = "horizontal",
+        axis.title = element_text(size = axis_text_size),
+        legend.title = element_text(size = axis_text_size),
+        legend.key.width = unit(1, "cm"),
+        legend.title.align = 0.5,
+        plot.margin = margin(b = 10)) +
+  guides(fill = guide_colourbar(title.position = "bottom",
+                                frame.colour = "darkgray", ticks.colour = "black"))
 
 ggsave(weight_area_fig,
        # filename = here("figs/overlay_weights_fig/weighted_area_fig.png"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/weighted_area_fig.png"),
+       filename = here("figs/overlay-weights-fig/weighted_area_fig.png"),
        width = 5,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ggsave(weight_area_fig,
        # filename = here("figs/overlay_weights_fig/weighted_area_fig.pdf"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/weighted_area_fig.pdf"),
+       filename = here("figs/overlay-weights-fig/weighted_area_fig.pdf"),
        width = 5,
        height = 5,
-       units = "in")
+       units = "in",
+       dpi = 300)
 ```
 
 Cropland Weights Normalized by Area
@@ -213,20 +258,33 @@ combined_weight_fig <-
   geom_sf(data = st_shift_longitude(county), alpha = 0) +
   #geom_label(data = overlay, mapping = aes(x = x, y = y, label = weight)) +
   theme_void() +
-  labs(fill = "Area normalized secondary weights:") +
-  theme(legend.position = "bottom")
+  labs(fill = "Fraction of total cropland\nin county captured by cell",
+       x = NULL,
+       y = NULL) +
+   theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        axis.title = element_text(size = axis_text_size),
+        legend.title = element_text(size = axis_text_size),
+        legend.key.width = unit(1, "cm"),
+        legend.title.align = 0.5,
+        plot.margin = margin(b = 10)) +
+  guides(fill = guide_colourbar(title.position = "bottom",
+                                frame.colour = "darkgray", ticks.colour = "black"))
+
 
 ggsave(combined_weight_fig,
        # filename = here("figs/overlay_weights_fig/combined_weight_fig.png"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/combined_weight_fig.png"),
-       width = 5,
-       height = 5,
-       units = "in")
+       filename = here("figs/overlay-weights-fig/combined_weight_fig.png"),
+       width = 3,
+       height = 3,
+       units = "in",
+       dpi = 300)
 ggsave(combined_weight_fig,
        # filename = here("figs/overlay_weights_fig/combined_weight_fig.pdf"),
-       filename = here("figs/reproduce-test/overlay_weights_fig/combined_weight_fig.pdf"),
-       width = 5,
-       height = 5,
-       units = "in")
+       filename = here("figs/overlay-weights-fig/combined_weight_fig.pdf"),
+       width = 3,
+       height = 3,
+       units = "in",
+       dpi = 300)
 ```
 

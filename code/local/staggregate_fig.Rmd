@@ -21,6 +21,8 @@ library(tigris)
 library(ggpubr)
 library(data.table)
 library(shades)
+library(ncdf4)
+library(cowplot)
 ```
 
 
@@ -32,6 +34,9 @@ counties_geoid <- c("06107") # The county to use for a small test
 
 # Color Palette
 fill_palette <- "Spectral"
+
+## axis text size 
+axis_text_size <- 9
 
 ```
 
@@ -121,13 +126,16 @@ Polish Hourly Raster Brick
 ```{r}
 hourly <- hourly +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
-  # labs(y = "\U2190 Hours \U2192",
-       # caption = "Hourly Gridded Data") +
+  labs(y = "Hours",
+       x = " "
+       # y = "\U2190 Hours \U2192",
+       # caption = "Hourly Gridded Data"
+  ) +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
@@ -137,15 +145,15 @@ hourly <- hourly +
 # Save figure
 ggsave(hourly,
        filename = here("figs/staggregate_fig/hourly_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(hourly,
        filename = here("figs/staggregate_fig/hourly_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 ```
@@ -186,13 +194,15 @@ Polish Daily Raster Brick
 ```{r}
 daily <- daily +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
-  # labs(y = "\U2190 Days \U2192",
+  labs(y = "Days",
+       x = " ") +
+       # y = "\U2190 Days \U2192",
        # caption = "Daily Gridded Data") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 20, face = "plain", hjust = .5),
         plot.background = element_blank(),
@@ -202,17 +212,51 @@ daily <- daily +
 # Save plot
 ggsave(daily,
        filename = here("figs/staggregate_fig/daily_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(daily,
        filename = here("figs/staggregate_fig/daily_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
+
+daily_x <- daily +
+  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(y = "Days",
+       x = "x") +
+       # y = "\U2190 Days \U2192",
+       # caption = "Daily Gridded Data") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
+        legend.position = "none",
+        plot.caption = element_text(size = 20, face = "plain", hjust = .5),
+        plot.background = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank())
+
+# Save plot
+ggsave(daily_x,
+       filename = here("figs/staggregate_fig/daily_stack_x.png"),
+       width = 4,
+       height = 3,
+       units = "in",
+       dpi = 300)
+
+ggsave(daily_x,
+       filename = here("figs/staggregate_fig/daily_stack_x.pdf"),
+       width = 4,
+       height = 3,
+       units = "in",
+       dpi = 300)
+
+
 ```
 
 
@@ -248,13 +292,16 @@ Polish Transformed Raster Bricks
 ```{r}
 daily_2 <- daily_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
+  labs(y = "Days",
+       # x = "X",
+       x = bquote(x^2)) +
   # labs(caption = expression("X"^{2}),
        # y = "") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 12, hjust = .5),
         plot.background = element_blank(),
@@ -264,15 +311,15 @@ daily_2 <- daily_2 +
 # Save Plot
 ggsave(daily_2,
        filename = here("figs/staggregate_fig/daily_2_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(daily_2,
        filename = here("figs/staggregate_fig/daily_2_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
@@ -360,13 +407,16 @@ Polish Monthly Gridded Brick
 ```{r}
 monthly_gridded_1 <- monthly_gridded_1 +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(y = "Months",
+       x = "x") +
+       # x = bquote(X^2)) +
   #labs(y = "\U2190 Days / Months / Years \U2192") +
        # caption = "X") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 12, face = "plain", hjust = .5),
         plot.background = element_blank(),
@@ -375,13 +425,15 @@ monthly_gridded_1 <- monthly_gridded_1 +
 
 monthly_gridded_2 <- monthly_gridded_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log")  +
+  labs(y = "Months",
+       x = bquote(x^2)) +
   # labs(caption = expression("X"^{2}),
        # y = "") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 12, hjust = .5),
         plot.background = element_blank(),
@@ -392,29 +444,29 @@ monthly_gridded_2 <- monthly_gridded_2 +
 # Save plots 
 ggsave(monthly_gridded_1,
        filename = here("figs/staggregate_fig/monthly_gridded_1_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(monthly_gridded_1,
        filename = here("figs/staggregate_fig/monthly_gridded_1_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(monthly_gridded_2,
        filename = here("figs/staggregate_fig/monthly_gridded_2_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(monthly_gridded_2,
        filename = here("figs/staggregate_fig/monthly_gridded_2_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 ```
@@ -497,13 +549,15 @@ Polish Monthly Polygon Brick
 ```{r}
 monthly_county_1 <- monthly_county_1 +
   scale_fill_distiller(palette = fill_palette, direction = -1) +
+  labs(y = "Months",
+       x = "x") +
   # labs(y = "\U2190 Days / Months / Years \U2192",
        # caption = "X") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 12, face = "plain", hjust = .5),
         plot.background = element_blank(),
@@ -512,13 +566,15 @@ monthly_county_1 <- monthly_county_1 +
 
 monthly_county_2 <- monthly_county_2 +
   scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
+  labs(y = "Months",
+       x = bquote(x^2)) +
   # labs(caption = expression("X"^{2}),
        # y = "") +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank(),
         axis.line = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 16),
+        axis.title.x = element_text(size = axis_text_size),
+        axis.title.y = element_text(size = axis_text_size),
         legend.position = "none",
         plot.caption = element_text(size = 12, hjust = .5),
         plot.background = element_blank(),
@@ -528,29 +584,156 @@ monthly_county_2 <- monthly_county_2 +
 # Save plots 
 ggsave(monthly_county_1,
        filename = here("figs/staggregate_fig/monthly_county_1_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(monthly_county_1,
        filename = here("figs/staggregate_fig/monthly_county_1_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(monthly_county_2,
        filename = here("figs/staggregate_fig/monthly_county_2_stack.png"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
 
 ggsave(monthly_county_2,
        filename = here("figs/staggregate_fig/monthly_county_2_stack.pdf"),
-       width = 7,
-       height = 5,
+       width = 4,
+       height = 3,
        units = "in",
        dpi = 300)
+```
+
+plot together
+```{r}
+fig2a <- plot_grid(
+  daily,
+  hourly,
+  nrow = 1,
+  rel_widths = c(1, 1),
+  align = 'h',
+  labels = c("A"),
+  label_size = 16, 
+  hjust = -1)
+# +
+#   theme(panel.border = element_rect(color = "black", linewidth = 1))
+
+ggsave(fig2a,
+       filename = here("figs/staggregate_fig/fig2a.png"),
+       width = 4,
+       height = 2,
+       units = "in",
+       dpi = 300)
+
+ggsave(fig2a,
+       filename = here("figs/staggregate_fig/fig2a.pdf"),
+       width = 4,
+       height = 2,
+       units = "in",
+       dpi = 300)
+
+fig2b <- plot_grid(
+  daily_x,
+  daily_2,
+  rel_widths = c(1, 1),
+  align = 'h',
+  labels = c("B"),
+  label_size = 16,
+  hjust = -1,
+  nrow = 1) 
+
+ggsave(fig2b,
+       filename = here("figs/staggregate_fig/fig2b.png"),
+       width = 4,
+       height = 2,
+       units = "in",
+       dpi = 300)
+
+ggsave(fig2b,
+       filename = here("figs/staggregate_fig/fig2b.pdf"),
+       width = 4,
+       height = 2,
+       units = "in",
+       dpi = 300)
+
+# +
+#   theme(plot.background = element_rect(color = "black"))
+
+# fig2ab <- plot_grid(
+#   fig2a,
+#   fig2b,
+#   rel_widths = c(1, 1),
+#   align = 'h',
+#   # labels = c("A", "B"),
+#   # label_size = 16,
+#   # hjust = -1,
+#   nrow = 1
+# )
+
+
+
+
+fig2c <- plot_grid(
+  monthly_gridded_1,
+  monthly_gridded_2,
+  monthly_county_1,
+  monthly_county_2,
+  rel_widths = c(1, 1, 1, 1),
+  align = 'h',
+  labels = c("C"),
+  label_size = 16,
+  hjust = -1,
+  nrow = 1) 
+# +
+#   theme(plot.background = element_rect(color = "black"))
+
+ggsave(fig2c,
+       filename = here("figs/staggregate_fig/fig2c.png"),
+       width = 8,
+       height = 2,
+       units = "in",
+       dpi = 300)
+
+ggsave(fig2c,
+       filename = here("figs/staggregate_fig/fig2c.pdf"),
+       width = 8,
+       height = 2,
+       units = "in",
+       dpi = 300)
+
+
+## plot together
+fig2 <- plot_grid(
+  fig2a,
+  fig2b,
+  fig2c,
+  rel_widths = c(0.5, 0.5, 1),
+  align = 'h',
+  # labels = c("A", "B"),
+  # label_size = 16,
+  # hjust = -1,
+  nrow = 2
+)
+
+ggsave(fig2,
+       filename = here("figs/staggregate_fig/fig2.png"),
+       width = 8,
+       height = 4,
+       units = "in",
+       dpi = 300)
+
+ggsave(fig2,
+       filename = here("figs/staggregate_fig/fig2.pdf"),
+       width = 8,
+       height = 4,
+       units = "in",
+       dpi = 300)
+
 ```
