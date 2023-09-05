@@ -211,24 +211,27 @@ spline_plot_function <- function(x){ # Prepare to graph equation estimated by sp
 #     spline_plot_data$conf.high[2]*spline_term_calc_function(17.5)
 # }
 
+axis_text_size <- 12
+
 plot <- ggplot() +
   geom_ribbon(data = bin_plot_data, mapping = aes(x = graph_index, ymin = conf.low, ymax = conf.high), color = NA, fill = "darkgreen", alpha = .2) +
   geom_line(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), size = 2, color = "darkgreen") +
   geom_point(data = bin_plot_data, mapping = aes(x = graph_index, y = estimate), color = "darkgreen", size = 2) +
+  geom_function(fun = poly_plot_function, color = "blue", size = 2) +
   theme_minimal() +
   scale_x_continuous(breaks = -2:6*5,
                      expand = c(0,0),
                      limits = c(-12.5, 32.5)) +
   scale_y_continuous(breaks = c(-.002, 0, .002, .004, .006),
                      limits = c(-.001, .005)) +
-  labs(x = "Daily Average Temperature (C)",
-       y = "Estimated Impact\non Log Mortality") +
+  labs(x = "Daily average temperature (C)",
+       y = "Estimated impact on log mortality") +
   theme(axis.line = element_line(color = "black", size = 2),
         plot.margin = margin(0, 0, 0, 5),
         panel.grid = element_blank(),
-        axis.title = element_text(size = 20),
-        axis.text = element_text(size = 16)) +
-  geom_function(fun = poly_plot_function, color = "blue", size = 2) 
+        axis.title = element_text(size = axis_text_size),
+        axis.text = element_text(size = axis_text_size),
+        legend.text = element_text(size = axis_text_size)) 
   #geom_function(fun = spline_plot_function, color = "red", size = 1.25) #+
   #geom_function(fun = spline_conf_low_function, color = "red") +
   #geom_function(fun = spline_conf_high_function, color = "red")
@@ -243,13 +246,15 @@ ggsave(plot,
        width = 7,
        height = 5,
        units = "in",
-       bg = "white")
+       bg = "white",
+       dpi = 300)
 
 ggsave(plot,
        filename = here("figs/demo_fig/reg_plot.pdf"),
        width = 7,
        height = 5,
        units = "in",
-       bg = "white")
+       bg = "white", 
+       dpi = 300)
 ```
 
