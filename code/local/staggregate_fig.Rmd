@@ -112,9 +112,20 @@ while(i <= 4348){
     rename(value = 1) %>% 
     st_as_sf()
   
+  box <- st_make_grid(a, n = 1) %>%
+    data.frame() %>%
+    st_as_sf() %>%
+    rotate_data(y_add = y_int*i)
+
+  a <- a %>%
+    rotate_data(y_add = y_int*i)
+
   hourly <- hourly + 
-    geom_sf(data = a %>% rotate_data(y_add = y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
-    geom_sf(data = a %>% rotate_data(y_add = y_int*i), mapping = aes(fill = value), color = NA)
+    geom_sf(data = box, size = .1, color = "black", fill = "white") +
+    # geom_sf(data = a %>% rotate_data(y_add = y_int*i), mapping = aes(fill = value), size = 2, color = NA) +
+    geom_sf(data = a, mapping = aes(fill = value), color = NA) +
+    geom_sf(data = box, size = 1, color = "black", fill = NA)
+  
   i = i + 1
 }
 
@@ -180,10 +191,22 @@ while(i <= 185){
     rename(value = 1) %>% 
     st_as_sf()
   
+  box <- st_make_grid(a, n = 1) %>%
+    data.frame() %>%
+    st_as_sf() %>%
+    rotate_data(y_add = 3*y_int*i)
+
+  a <- a %>%
+     rotate_data(y_add = 3*y_int*i)
+
+  
   # Spacing out the layers a little more by doing 3*y_int*i
   daily <- daily + 
-    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
-    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), color = NA)
+    geom_sf(data = box, size = .1, color = "black", fill = "white") +
+    # geom_sf(data = a, mapping = aes(fill = value), size = 2, color = "black") +
+    geom_sf(data = a, mapping = aes(fill = value), color = NA) +
+    geom_sf(data = box, size = 1, color = "black", fill = NA)
+  
   i = i + 1
 }
 
@@ -277,10 +300,22 @@ while(i <= 185){
     rename(value = 1) %>% 
     st_as_sf()
   
+   box <- st_make_grid(a, n = 1) %>%
+    data.frame() %>%
+    st_as_sf() %>%
+    rotate_data(y_add = 3*y_int*i)
+
+  a <- a %>%
+     rotate_data(y_add = 3*y_int*i)
+
   daily_2 <- daily_2 + 
-    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), size = 2, color = "black") +
-    geom_sf(data = a %>% rotate_data(y_add = 3*y_int*i), mapping = aes(fill = value), color = NA)
+    geom_sf(data = box, size = .1, color = "black", fill = "white") +
+    # geom_sf(data = a, mapping = aes(fill = value), size = 2, color = "black") +
+    geom_sf(data = a, mapping = aes(fill = value), color = NA) +
+    geom_sf(data = box, size = 1, color = "black", fill = NA)
+  
   i = i + 1
+  
 }
 
 
@@ -375,9 +410,19 @@ while(i >= 6){
     inner_join(grid_polys, by = "poly_id") %>% 
     st_as_sf()
   
+  box <- st_make_grid(a, n = 1) %>%
+    data.frame() %>%
+    st_as_sf() %>%
+    rotate_data(y_add = 10*y_int*(4 - i))
+
+  a <- a %>%
+     rotate_data(y_add = 10*y_int*(4 - i))
+  
   monthly_gridded_1 <- monthly_gridded_1 + 
-    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_1), size = 2, color = "black") +
-    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_1), color = NA)
+    geom_sf(data = box, size = .1, color = "black", fill = "white") +
+    # geom_sf(data = a, mapping = aes(fill = order_1), size = 2, color = "black") +
+    geom_sf(data = a, mapping = aes(fill = order_1), color = NA) +
+    geom_sf(data = box, size = 1, color = "black", fill = NA)
   
   i = i - 1
 }
@@ -394,9 +439,19 @@ while(i >= 6){
     inner_join(grid_polys, by = "poly_id") %>% 
     st_as_sf()
   
+  box <- st_make_grid(a, n = 1) %>%
+    data.frame() %>%
+    st_as_sf() %>%
+    rotate_data(y_add = 10*y_int*(4 - i))
+
+  a <- a %>%
+     rotate_data(y_add = 10*y_int*(4 - i))
+  
   monthly_gridded_2 <- monthly_gridded_2 + 
-    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_2), size = 2, color = "black") +
-    geom_sf(data = a %>% rotate_data(y_add = 10*y_int*(4 - i)), mapping = aes(fill = order_2), color = NA)
+    geom_sf(data = box, size = .1, color = "black", fill = "white") +
+    # geom_sf(data = a, mapping = aes(fill = order_2), size = 2, color = "black") +
+    geom_sf(data = a, mapping = aes(fill = order_2), color = NA) +
+    geom_sf(data = box, size = 1, color = "black", fill = NA)
   
   i = i - 1
 }
@@ -614,8 +669,8 @@ ggsave(monthly_county_2,
 plot together
 ```{r}
 fig2a <- plot_grid(
-  daily,
   hourly,
+  daily,
   nrow = 1,
   rel_widths = c(1, 1),
   align = 'h',

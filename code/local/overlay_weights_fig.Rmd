@@ -33,11 +33,12 @@ cropland_fill <- "gold"
 grid_color <- "grey"
 w_area_fill <- "#61B1FF"
 combined_fill <- "#7fb17f"
+county_color <- "#404040"
 
 axis_text_size <- 12
 
 grid_width <- 0.65
-poly_width <- 0.8
+poly_width <- 0.7
 
 ```
 
@@ -100,9 +101,9 @@ cropland_table_crop <- cropland_table %>%
 cropland_fig <- ggplot() +
   # geom_tile(data = cropland_df, aes(x,y, fill = as.factor(cropland_NW_2015))) +
   geom_tile(data = cropland_df_crop, aes(x,y, fill = as.factor(cropland_NW_2015))) +
-  geom_sf(data = county, alpha = 0, lwd = poly_width) +
   geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y), 
-            alpha = 0, lwd = grid_width, color = grid_color)  +
+            alpha = 0, lwd = 0.6, color = grid_color)  +
+  geom_sf(data = county, alpha = 0, lwd = 0.5) +
   labs(caption = "Cropland raster") +
   scale_fill_manual(values = c("0" = "white",
                               "1" = cropland_fill)) +
@@ -139,7 +140,7 @@ Plot of Resampled Secondary Weights
 ```{r}
 resamp_sec_weights_fig <- ggplot() +
   geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y, fill = weight), size = grid_width, color = grid_color) +
-  geom_sf(data = county, alpha = 0, lwd = poly_width) +
+  geom_sf(data = county, alpha = 0, lwd = poly_width, color = county_color) +
   scale_fill_gradient(low = "white",
                       high = cropland_fill,
                       breaks = c(0, 0.2, 0.4, 0.60, 0.8),
@@ -181,8 +182,8 @@ Sole Polygon and Grid Plot
 admin_region_fig <- 
   ggplot() +
   labs(caption = "County polygon") +
-  geom_sf(data = county, fill = w_area_fill, color = "black", alpha = 0.6, lwd = poly_width) +
-  geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y), alpha = 0, size = grid_width, color = grid_color) +
+  geom_tile(data = cropland_table_crop, mapping = aes(x = x, y = y), alpha = 0, size = 0.5, color = grid_color) +
+  geom_sf(data = county, fill = w_area_fill, color = county_color, alpha = 0.6, lwd = poly_width) +
   theme_void() +
   theme(plot.caption = element_text(hjust = 0.5, size = axis_text_size),
         plot.margin = margin(b = 10))
@@ -219,7 +220,7 @@ weight_area_fig <-
                       guide = guide_colorbar(frame.colour = "black",
                                              ticks.colour = "black",
                                              ticks = TRUE)) +
-  geom_sf(data = st_shift_longitude(county), alpha = 0, lwd = poly_width) +
+  geom_sf(data = st_shift_longitude(county), alpha = 0, lwd = poly_width, color = county_color) +
   theme_void() +
   labs(fill = "Fraction of total county \narea captured by cell",
        x = NULL,
@@ -255,7 +256,7 @@ Cropland Weights Normalized by Area
 # Same plot as before but using weight instead of w_area
 combined_weight_fig <- 
   ggplot() +
-  geom_tile(data = overlay, mapping = aes(x = x, y = y, fill = combined_weight), size = grid_width, color = grid_color) +
+  geom_tile(data = overlay, mapping = aes(x = x, y = y, fill = combined_weight), lwd = 0.3, color = grid_color) +
   scale_fill_gradient(low = "white",
                       high = combined_fill,
                       breaks = c(0, 0.05, 0.10, 0.15, 0.20, 0.25),
@@ -264,7 +265,7 @@ combined_weight_fig <-
                                              ticks.colour = "black",
                                              ticks = TRUE,
                                              barwidth = 10)) +
-  geom_sf(data = st_shift_longitude(county), alpha = 0, lwd = poly_width) +
+  geom_sf(data = st_shift_longitude(county), alpha = 0, lwd = poly_width, color = county_color) +
   #geom_label(data = overlay, mapping = aes(x = x, y = y, label = weight)) +
   theme_void() +
   labs(fill = "Fraction of total cropland\nin county captured by cell",
