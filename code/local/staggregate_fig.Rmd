@@ -23,6 +23,7 @@ library(data.table)
 library(shades)
 library(ncdf4)
 library(cowplot)
+library(RColorBrewer)
 ```
 
 
@@ -461,7 +462,7 @@ while(i >= 6){
 Polish Monthly Gridded Brick
 ```{r}
 monthly_gridded_1 <- monthly_gridded_1 +
-  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  scale_fill_distiller(palette = fill_palette, direction = -1, values = c(0, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 1)) +
   labs(y = "Months",
        x = "x") +
        # x = bquote(X^2)) +
@@ -479,7 +480,8 @@ monthly_gridded_1 <- monthly_gridded_1 +
         panel.grid.major = element_blank())
 
 monthly_gridded_2 <- monthly_gridded_2 +
-  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log")  +
+  scale_fill_distiller(palette = fill_palette, direction = -1, values = c(0, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 1)) +
+  # scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log")  +
   labs(y = "Months",
        x = bquote(x^2)) +
   # labs(caption = expression("X"^{2}),
@@ -603,7 +605,8 @@ while(i >= 6){
 Polish Monthly Polygon Brick
 ```{r}
 monthly_county_1 <- monthly_county_1 +
-  scale_fill_distiller(palette = fill_palette, direction = -1) +
+  # scale_fill_distiller(palette = fill_palette, direction = -1) +
+  scale_fill_distiller(palette = fill_palette, direction = -1, values = c(0, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 1)) +
   labs(y = "Months",
        x = "x") +
   # labs(y = "\U2190 Days / Months / Years \U2192",
@@ -620,7 +623,8 @@ monthly_county_1 <- monthly_county_1 +
         panel.grid.major = element_blank())
 
 monthly_county_2 <- monthly_county_2 +
-  scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
+  # scale_fill_distiller(palette = fill_palette, direction = -1, trans = "log") +
+  scale_fill_distiller(palette = fill_palette, direction = -1, values = c(0, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 1)) +
   labs(y = "Months",
        x = bquote(x^2)) +
   # labs(caption = expression("X"^{2}),
